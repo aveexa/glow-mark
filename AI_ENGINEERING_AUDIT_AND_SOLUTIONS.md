@@ -57,7 +57,7 @@ This document lists every material issue found in a full codebase review, then g
 |----|--------|--------|--------|
 | **P0-1** | No `backend/models/` directory | Repo root | Inference cannot start |
 | **P0-2** | Missing `beauty_landmarks_best.pt` | Expected at `backend/models/beauty_landmarks_best.pt` | Beauty score path crashes on first `/analyze` |
-| **P0-3** | Missing `reco_geometry_model.pt` | Expected at `backend/models/reco_geometry_model.pt` | Recommendation path crashes |
+| **P0-3** | Missing `feature_geometry_model.pt` | Expected at `backend/models/feature_geometry_model.pt` | Recommendation path crashes |
 | **P0-4** | No suggestion / advice model | Product expectation vs code | Users get either terse labels (`nose_width_ratio: high`) or hardcoded surgical-sounding prose — neither is a trained advice model |
 | **P0-5** | No datasets or training pipelines | Entire repo | Models cannot be recreated |
 
@@ -66,7 +66,7 @@ Checkpoint load (CWD-relative, fragile):
 ```python
 # backend/inference.py — _load_models()
 torch.load("backend/models/beauty_landmarks_best.pt", ...)
-torch.load("backend/models/reco_geometry_model.pt", ...)
+torch.load("backend/models/feature_geometry_model.pt", ...)
 ```
 
 ### P1 — Wrong or misleading ML / geometry
@@ -122,7 +122,7 @@ You must train **new** models that match what `inference.py` already loads. Do n
 
 **Strong recommendation before training:** switch training **and** inference to **face-crop + scale-normalized** coordinates (e.g. bbox → fixed 256×256, center/scale), then retrain. Raw pixels are a liability.
 
-### 4.2 Geometry recommendation model — `reco_geometry_model.pt`
+### 4.2 Geometry recommendation model — `feature_geometry_model.pt`
 
 | Field | Type | Meaning |
 |-------|------|---------|
@@ -265,7 +265,7 @@ backend/training/
 
 ### Phase 3 — Build Dataset B: Geometry low / ok / high classifier
 
-**Goal:** Train `reco_geometry_model.pt`.
+**Goal:** Train `feature_geometry_model.pt`.
 
 This model does **not** invent advice text. It classifies each geometry channel as **below / within / above** an acceptable band relative to a population prior (or expert-defined bands).
 
@@ -320,7 +320,7 @@ Abbreviated feature set shown for readability; real CSV must include **all 24 fe
      "mu": mu,
      "sd": sd,
      "state": model.state_dict(),  # note: key is "state", not "model_state"
-   }, "backend/models/reco_geometry_model.pt")
+   }, "backend/models/feature_geometry_model.pt")
 ```
 
 ---
@@ -522,7 +522,7 @@ Train the beauty MLP to regress this proxy from 68-pt landmarks. It will be **co
 | Week | Deliverable |
 |------|-------------|
 | **1** | Fix geometry bugs; `__file__` model paths; health check; Unix scripts; create `backend/models/`; data folder layout; suggestion catalog v0 (40 templates) |
-| **2** | Extract landmarks on 5k–20k faces; build Dataset B via percentiles; train + export `reco_geometry_model.pt`; wire template suggestions from classes |
+| **2** | Extract landmarks on 5k–20k faces; build Dataset B via percentiles; train + export `feature_geometry_model.pt`; wire template suggestions from classes |
 | **3** | Build Dataset A (proxy or ratings); train + export `beauty_landmarks_best.pt`; unify `/analyze` + `/dashboard`; fix types/UI |
 | **4** | Collect Dataset C rankings; train suggestion ranker (or ship rules v1); security (auth/CORS); rewrite README/privacy; evaluation report |
 
@@ -537,7 +537,7 @@ If you need a temporary local demo **before** real training:
 
 ```text
 backend/models/beauty_landmarks_best.pt
-backend/models/reco_geometry_model.pt
+backend/models/feature_geometry_model.pt
 ```
 
 3. Run Flask from repo root (or after `__file__` path fix).  
@@ -552,7 +552,7 @@ backend/models/reco_geometry_model.pt
 | You identified | Solution |
 |----------------|----------|
 | No `beauty_landmarks_best.pt` | Create Dataset A → train MLP → export checkpoint matching §4.1 |
-| No `reco_geometry_model.pt` | Create Dataset B → train 24×3 classifier → export matching §4.2 |
+| No `feature_geometry_model.pt` | Create Dataset B → train 24×3 classifier → export matching §4.2 |
 | No `/backend/models` folder | Create it; gitignore `*.pt`; load via `__file__` |
 | No model for beauty suggestions; hardcoded in `beauty-scorer.ts` | Build suggestion catalog + Dataset C → template mapper / ranker; retire hardcoded `generateRecommendations` for production |
 | No suitable advice dataset | You must create it: features + classes → approved `suggestion_ids` (samples in §6) |

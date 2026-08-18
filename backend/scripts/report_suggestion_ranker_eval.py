@@ -40,7 +40,7 @@ from suggestion_rl import TOP_K, eval_ndcg_map, gold_relevance, ndcg_at_k  # noq
 from suggestion_rules import load_catalog  # noqa: E402
 
 BEAUTY_CKPT = REPO_ROOT / "backend" / "models" / "beauty_landmarks_best.pt"
-FEATURE_CKPT = REPO_ROOT / "backend" / "models" / "reco_geometry_model.pt"
+FEATURE_CKPT = REPO_ROOT / "backend" / "models" / "feature_geometry_model.pt"
 BCE_ROLLBACK = REPO_ROOT / "backend" / "models" / "suggestion_ranker_bce_v1.pt"
 
 
@@ -283,9 +283,9 @@ def _smoke_analyze(
     suggestions = suggestion_serve.predict_suggestions(feats, top_k=4)
     _assert_suggestions_contract(suggestions, catalog)
     return {
-        "analyze_status": "fallback_predict_suggestions_missing_beauty_reco",
+        "analyze_status": "fallback_predict_suggestions_missing_beauty_feature",
         "beauty_ckpt_present": beauty_ok,
-        "reco_ckpt_present": feature_ok,
+        "feature_ckpt_present": feature_ok,
         "n_suggestions": len(suggestions),
         "suggestion_ids": [s["id"] for s in suggestions],
         "sample_id": smoke_row.get("sample_id"),

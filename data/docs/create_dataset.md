@@ -447,7 +447,7 @@ API field when checkpoint present:
 |------|---------|
 | `backend/models/suggestion_ranker.pt` | Suggestion MLP weights |
 | `backend/models/beauty_landmarks_best.pt` | Beauty score (separate; may be missing) |
-| `backend/models/reco_geometry_model.pt` | Feature classes (separate; may be missing) |
+| `backend/models/feature_geometry_model.pt` | Feature classes (separate; may be missing) |
 
 ---
 

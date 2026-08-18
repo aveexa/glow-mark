@@ -474,7 +474,7 @@ Full training write-up (algorithm, pipeline, validation metric): [`data/docs/tra
 
 | Item | Spec |
 |------|------|
-| **Checkpoint** | `backend/models/reco_geometry_model.pt` |
+| **Checkpoint** | `backend/models/feature_geometry_model.pt` |
 | **Defined in** | `inference.py` → `_mlp_feature` |
 | **Architecture** | `24 → 256 → ReLU → 256 → ReLU → 72` |
 | **Task** | Multi-head 3-class classification (one head per geometry feature) |

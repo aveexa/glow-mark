@@ -139,9 +139,9 @@ def _load_stats() -> Dict[str, Any]:
         default_dest=Path("/tmp/models/beauty_landmarks_best.pt"),
     )
     feature_path = resolve_artifact(
-        local_env="RECO_MODEL_PATH",
-        gcs_env="RECO_MODEL_GCS_URI",
-        default_dest=Path("/tmp/models/reco_geometry_model.pt"),
+        local_env="FEATURE_MODEL_PATH",
+        gcs_env="FEATURE_MODEL_GCS_URI",
+        default_dest=Path("/tmp/models/feature_geometry_model.pt"),
     )
     beauty_ckpt = torch.load(beauty_path, map_location="cpu", weights_only=False)
     feature_ckpt = torch.load(feature_path, map_location="cpu", weights_only=False)
@@ -217,13 +217,13 @@ def _extract_landmarks_468(img_bgr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 
 def _api_urls() -> tuple[str, str, str]:
     beauty = os.environ.get("BEAUTY_URL", "").rstrip("/")
-    feature = os.environ.get("RECO_URL", "").rstrip("/")
+    feature = os.environ.get("FEATURE_URL", "").rstrip("/")
     suggestion = os.environ.get("SUGGESTION_URL", "").rstrip("/")
     if not beauty or not feature or not suggestion:
         raise AnalyzeError(
             code="UNKNOWN_ERROR",
             http_status=500,
-            details="Set BEAUTY_URL, RECO_URL, and SUGGESTION_URL.",
+            details="Set BEAUTY_URL, FEATURE_URL, and SUGGESTION_URL.",
         )
     return beauty, feature, suggestion
 
@@ -242,7 +242,7 @@ def call_beauty(features_136: list[float]) -> dict:
 def call_feature(features_24: list[float]) -> dict:
     _, feature_url, _ = _api_urls()
     r = httpx.post(
-        f"{feature_url}/v1/reco/predict",
+        f"{feature_url}/v1/feature/predict",
         json={"features": features_24},
         timeout=30.0,
     )

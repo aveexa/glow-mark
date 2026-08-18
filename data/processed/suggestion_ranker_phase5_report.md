@@ -35,7 +35,7 @@
 
 ## Serve smoke
 
-- status: `fallback_predict_suggestions_missing_beauty_reco`
+- status: `fallback_predict_suggestions_missing_beauty_feature`
 - sample_id: `lfw_00288`
 - suggestion_ids: `['SUG_FACE_ASPECT_HIGH_01', 'SUG_JAW_WIDE_01', 'SUG_JAW_ANGLE_LOW_01', 'SUG_MIDFACE_HIGH_01']`
 

@@ -33,7 +33,7 @@ def load_bundle() -> dict[str, Any]:
     path = resolve_artifact(
         local_env="MODEL_PATH",
         gcs_env="MODEL_GCS_URI",
-        default_dest=Path("/tmp/models/reco_geometry_model.pt"),
+        default_dest=Path("/tmp/models/feature_geometry_model.pt"),
     )
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     feat_cols: list[str] = list(ckpt["feat_cols"])
@@ -66,7 +66,7 @@ def health():
     return {"ok": True, "model_loaded": True}
 
 
-@app.post("/v1/reco/predict")
+@app.post("/v1/feature/predict")
 def predict(body: PredictIn):
     b = load_bundle()
     if len(body.features) != b["in_dim"]:

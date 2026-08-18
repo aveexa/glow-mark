@@ -99,7 +99,7 @@ Outcome (production `suggestion_ranker.pt`):
 | val / test MAP@4 | 0.9149 / 0.9306 |
 | Ship gate reaffirm | **pass** (`rl_v1`) |
 | Catalog coverage | 38 / 48 unique IDs; top-ID share 0.081 (no collapse) |
-| Serve smoke | `fallback_predict_suggestions_missing_beauty_reco` (beauty/feature `.pt` absent; suggestions still catalog-valid) |
+| Serve smoke | `fallback_predict_suggestions_missing_beauty_feature` (beauty/feature `.pt` absent; suggestions still catalog-valid) |
 
 ---
 

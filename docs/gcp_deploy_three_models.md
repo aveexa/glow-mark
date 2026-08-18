@@ -41,7 +41,7 @@ Glow-Mark ships **three** neural nets. Deploy them as **three independent Cloud 
               ┌─────────────────────────────┬───────────────┼────────────────┐
               ▼                             ▼               ▼                │
      Beauty API (CR)                 Feature API (CR)   Suggestion API (CR)     │
-     POST /v1/beauty/predict         /v1/reco/…      /v1/suggestion/…        │
+     POST /v1/beauty/predict         /v1/feature/…      /v1/suggestion/…        │
      136 → score                     24 → low/ok/high  24 → top-4 catalog    │
               ▲                             ▲               ▲                │
               └─────────────────────────────┴───────────────┘                │
@@ -51,7 +51,7 @@ Glow-Mark ships **three** neural nets. Deploy them as **three independent Cloud 
 | Service | Role | Heavy deps |
 |---------|------|------------|
 | `glow-beauty-api` | Beauty MLP only | `torch`, `numpy` |
-| `glow-reco-api` | Feature MLP only | `torch`, `numpy` |
+| `glow-feature-api` | Feature MLP only | `torch`, `numpy` |
 | `glow-suggestion-api` | Ranker + catalog lookup | `torch`, `numpy` + CSV rules/catalog |
 | `glow-analyze-api` | Image → landmarks → call 3 APIs | `mediapipe`, `opencv`, `flask` |
 
@@ -132,7 +132,7 @@ gsutil iam ch \
 | Local path | GCS object | Used by |
 |------------|------------|---------|
 | `backend/models/beauty_landmarks_best.pt` | `gs://$BUCKET/beauty/beauty_landmarks_best.pt` | Beauty API |
-| `backend/models/reco_geometry_model.pt` | `gs://$BUCKET/reco/reco_geometry_model.pt` | Feature API |
+| `backend/models/feature_geometry_model.pt` | `gs://$BUCKET/feature/feature_geometry_model.pt` | Feature API |
 | `backend/models/suggestion_ranker.pt` | `gs://$BUCKET/suggestion/suggestion_ranker.pt` | Suggestion API |
 | `data/catalogs/suggestions.csv` | `gs://$BUCKET/suggestion/suggestions.csv` | Suggestion API |
 | `data/processed/suggestion_mapping_rules.csv` | `gs://$BUCKET/suggestion/suggestion_mapping_rules.csv` | Suggestion API |
@@ -149,7 +149,7 @@ Confirm files exist before upload:
 
 ```bash
 ls -lh backend/models/beauty_landmarks_best.pt \
-       backend/models/reco_geometry_model.pt \
+       backend/models/feature_geometry_model.pt \
        backend/models/suggestion_ranker.pt \
        data/catalogs/suggestions.csv \
        data/processed/suggestion_mapping_rules.csv
@@ -181,7 +181,7 @@ ls -lh backend/models/beauty_landmarks_best.pt \
 - Input length must equal checkpoint `in_dim` (typically **136**).
 - Service runs MLP forward only; `score = clip(score_raw, 0, 100)`.
 
-### 4.2 Feature — `POST /v1/reco/predict`
+### 4.2 Feature — `POST /v1/feature/predict`
 
 **Request**
 
@@ -253,7 +253,7 @@ services/
     Dockerfile
     requirements.txt
     main.py
-  reco/
+  feature/
     Dockerfile
     requirements.txt
     main.py
@@ -405,7 +405,7 @@ def predict(body: PredictIn):
 
 ```python
 # Same FastAPI + GCS download pattern.
-# Load reco_geometry_model.pt:
+# Load feature_geometry_model.pt:
 #   model = _mlp_feature(len(feat_cols), out_dim)
 #   model.load_state_dict(ckpt["state"])
 # Predict:
@@ -471,8 +471,8 @@ gsutil uniformbucketlevelaccess set on "gs://${BUCKET}"
 gsutil cp backend/models/beauty_landmarks_best.pt \
   "gs://${BUCKET}/beauty/beauty_landmarks_best.pt"
 
-gsutil cp backend/models/reco_geometry_model.pt \
-  "gs://${BUCKET}/reco/reco_geometry_model.pt"
+gsutil cp backend/models/feature_geometry_model.pt \
+  "gs://${BUCKET}/feature/feature_geometry_model.pt"
 
 gsutil cp backend/models/suggestion_ranker.pt \
   "gs://${BUCKET}/suggestion/suggestion_ranker.pt"
@@ -522,8 +522,8 @@ cd ../..
 
 # Feature
 cd services/feature
-docker build -t "${AR_HOST}/reco-api:v1" .
-docker push "${AR_HOST}/reco-api:v1"
+docker build -t "${AR_HOST}/feature-api:v1" .
+docker push "${AR_HOST}/feature-api:v1"
 cd ../..
 
 # Suggestion
@@ -551,8 +551,8 @@ gcloud run deploy glow-beauty-api \
   --set-env-vars "MODEL_GCS_URI=gs://${BUCKET}/beauty/beauty_landmarks_best.pt" \
   --allow-unauthenticated
 
-gcloud run deploy glow-reco-api \
-  --image "${AR_HOST}/reco-api:v1" \
+gcloud run deploy glow-feature-api \
+  --image "${AR_HOST}/feature-api:v1" \
   --region "${REGION}" \
   --platform managed \
   --memory 1Gi \
@@ -561,7 +561,7 @@ gcloud run deploy glow-reco-api \
   --min-instances 0 \
   --max-instances 3 \
   --timeout 60 \
-  --set-env-vars "MODEL_GCS_URI=gs://${BUCKET}/reco/reco_geometry_model.pt" \
+  --set-env-vars "MODEL_GCS_URI=gs://${BUCKET}/feature/feature_geometry_model.pt" \
   --allow-unauthenticated
 
 gcloud run deploy glow-suggestion-api \
@@ -582,11 +582,11 @@ Capture URLs:
 
 ```bash
 export BEAUTY_URL="$(gcloud run services describe glow-beauty-api --region "${REGION}" --format='value(status.url)')"
-export RECO_URL="$(gcloud run services describe glow-reco-api --region "${REGION}" --format='value(status.url)')"
+export FEATURE_URL="$(gcloud run services describe glow-feature-api --region "${REGION}" --format='value(status.url)')"
 export SUGGESTION_URL="$(gcloud run services describe glow-suggestion-api --region "${REGION}" --format='value(status.url)')"
 
 echo "BEAUTY_URL=${BEAUTY_URL}"
-echo "RECO_URL=${RECO_URL}"
+echo "FEATURE_URL=${FEATURE_URL}"
 echo "SUGGESTION_URL=${SUGGESTION_URL}"
 ```
 
@@ -598,7 +598,7 @@ echo "SUGGESTION_URL=${SUGGESTION_URL}"
 
 ```bash
 curl -sS "${BEAUTY_URL}/health"
-curl -sS "${RECO_URL}/health"
+curl -sS "${FEATURE_URL}/health"
 curl -sS "${SUGGESTION_URL}/health"
 ```
 
@@ -619,7 +619,7 @@ PY
 ```bash
 python3 - <<'PY'
 import json, urllib.request, os
-url = os.environ["RECO_URL"] + "/v1/reco/predict"
+url = os.environ["FEATURE_URL"] + "/v1/feature/predict"
 body = json.dumps({"features": [0.0] * 24}).encode()
 req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
 print(urllib.request.urlopen(req).read().decode())
@@ -660,7 +660,7 @@ Keep [`backend/app.py`](../backend/app.py) as the HTTP surface. In `analyze_imag
 1. MediaPipe + pose gate + `extract_geometry_features` — unchanged locally.
 2. Build beauty 136 features, z-score with beauty `mu`/`sd` (still need beauty checkpoint **stats** locally, or call beauty API with features z-scored using stats downloaded once).
 3. `POST {BEAUTY_URL}/v1/beauty/predict` with the 136-d vector.
-4. Build feature 24-d z-scored vector → `POST {RECO_URL}/v1/reco/predict`.
+4. Build feature 24-d z-scored vector → `POST {FEATURE_URL}/v1/feature/predict`.
 5. `POST {SUGGESTION_URL}/v1/suggestion/predict` with raw `feats` dict; on error use `suggestions = []`.
 6. Assemble the same JSON keys as today.
 
@@ -671,7 +671,7 @@ import os
 import httpx
 
 BEAUTY_URL = os.environ["BEAUTY_URL"].rstrip("/")
-RECO_URL = os.environ["RECO_URL"].rstrip("/")
+FEATURE_URL = os.environ["FEATURE_URL"].rstrip("/")
 SUGGESTION_URL = os.environ["SUGGESTION_URL"].rstrip("/")
 
 
@@ -682,7 +682,7 @@ def call_beauty(features_136: list[float]) -> dict:
 
 
 def call_feature(features_24: list[float]) -> dict:
-    r = httpx.post(f"{RECO_URL}/v1/reco/predict", json={"features": features_24}, timeout=30.0)
+    r = httpx.post(f"{FEATURE_URL}/v1/feature/predict", json={"features": features_24}, timeout=30.0)
     r.raise_for_status()
     return r.json()
 
@@ -746,7 +746,7 @@ gcloud run deploy glow-analyze-api \
   --min-instances 0 \
   --max-instances 5 \
   --timeout 120 \
-  --set-env-vars "BEAUTY_URL=${BEAUTY_URL},RECO_URL=${RECO_URL},SUGGESTION_URL=${SUGGESTION_URL}" \
+  --set-env-vars "BEAUTY_URL=${BEAUTY_URL},FEATURE_URL=${FEATURE_URL},SUGGESTION_URL=${SUGGESTION_URL}" \
   --allow-unauthenticated
 
 export ANALYZE_URL="$(gcloud run services describe glow-analyze-api --region "${REGION}" --format='value(status.url)')"
@@ -803,7 +803,7 @@ gcloud run services remove-iam-policy-binding glow-beauty-api \
   --member="allUsers" \
   --role="roles/run.invoker"
 
-# repeat for glow-reco-api and glow-suggestion-api
+# repeat for glow-feature-api and glow-suggestion-api
 ```
 
 2. **Grant only the orchestrator runtime SA** `roles/run.invoker` on each model service.
@@ -835,7 +835,7 @@ Cold start tip: import `torch` at module level once; download weights in `startu
 Use this as a live walkthrough script (~10 minutes).
 
 1. **GCP Console → Cloud Storage** — show `gs://$BUCKET` with three `.pt` files + CSVs.
-2. **Cloud Run** — show four services: `glow-beauty-api`, `glow-reco-api`, `glow-suggestion-api`, `glow-analyze-api`.
+2. **Cloud Run** — show four services: `glow-beauty-api`, `glow-feature-api`, `glow-suggestion-api`, `glow-analyze-api`.
 3. **Postman / curl** — hit each model `/health`, then each `/v1/.../predict` with a real feature vector; show JSON.
 4. **Architecture slide** — one sentence: “MediaPipe stays in the orchestrator; three MLPs are separate prediction APIs.”
 5. **Product path** — open Next.js `/analyze`, upload a frontal selfie, show score + recommendations (+ suggestions if UI wired).
@@ -872,7 +872,7 @@ export BUCKET="glow-mark-models-${PROJECT_ID}"
 export AR_HOST="${REGION}-docker.pkg.dev/${PROJECT_ID}/glow-mark"
 
 export BEAUTY_URL="https://...."
-export RECO_URL="https://...."
+export FEATURE_URL="https://...."
 export SUGGESTION_URL="https://...."
 export ANALYZE_URL="https://...."
 

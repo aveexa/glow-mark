@@ -164,7 +164,7 @@ def _load_models():
         weights_only=False,
     )
     feature_ckpt = torch.load(
-        _MODELS_DIR / "reco_geometry_model.pt",
+        _MODELS_DIR / "feature_geometry_model.pt",
         map_location="cpu",
         weights_only=False,
     )

@@ -1,7 +1,7 @@
 # Training: Feature MLP v1 (geometry recommendation classifier)
 
 **Status:** Shipped checkpoint in use for `/analyze`  
-**Checkpoint:** `backend/models/reco_geometry_model.pt`  
+**Checkpoint:** `backend/models/feature_geometry_model.pt`  
 **Serve code:** `backend/inference.py` → `_mlp_feature` / feature branch of `analyze_image_bytes`  
 **Feature contract:** [`feature_contract_v1.md`](feature_contract_v1.md) (`FEATURE_CONTRACT_VERSION = "v1"`)
 
@@ -86,7 +86,7 @@ FFHQ face images
   → Extract 24 geometry floats (feature contract v1)
   → Percentile labels (p20/p80 on train)
   → Train Feature MLP
-  → Export reco_geometry_model.pt
+  → Export feature_geometry_model.pt
 ```
 
 | Item | Spec |
@@ -125,7 +125,7 @@ Note: weights are under the key **`state`** (not `model_state`).
 
 ## Results
 
-Metric stored in the shipped checkpoint (`backend/models/reco_geometry_model.pt`):
+Metric stored in the shipped checkpoint (`backend/models/feature_geometry_model.pt`):
 
 | Metric | Value | Notes |
 |--------|-------|--------|
@@ -160,7 +160,7 @@ Macro-F1 is appropriate here because `ok` is more frequent (~60%) than `low`/`hi
 | Model | Checkpoint | Algorithm / task | Output |
 |-------|------------|------------------|--------|
 | **Beauty MLP** | `beauty_landmarks_best.pt` | MLP **regression** from 68-pt landmarks | Scalar score 0–100 |
-| **Feature MLP** (this doc) | `reco_geometry_model.pt` | MLP **classification** of 24 geometry channels | `low` / `ok` / `high` × 24 |
+| **Feature MLP** (this doc) | `feature_geometry_model.pt` | MLP **classification** of 24 geometry channels | `low` / `ok` / `high` × 24 |
 | **Suggestion ranker** | `suggestion_ranker.pt` | MLP multi-label ranking over catalog IDs | Top-k approved tip texts |
 
 Feature MLP and the suggestion ranker both consume the same 24 geometry floats, but they are **independent** models. At serve time, suggestion class one-hots come from percentile thresholds in `suggestion_mapping_rules.csv`, not from Feature argmax.
