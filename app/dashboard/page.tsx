@@ -16,9 +16,7 @@ import { ProcessingStepper } from "@/components/processing-stepper"
 import { ResultsDashboard } from "@/components/results-dashboard"
 import { ErrorState } from "@/components/error-state"
 import { PROCESSING_STEPS, ErrorCode, ERROR_CODES } from "@/lib/constants"
-import { AnalysisResult } from "@/lib/types"
-import { detectFaceLandmarks, loadImageFromFile } from "@/lib/mediapipe/face-landmarker"
-import { calculateAestheticScore } from "@/lib/analysis/beauty-scorer"
+import { AnalysisResult, BackendAnalyzeResponse, BackendAnalyzeApiResponse } from "@/lib/types"
 import { signOutUser } from "@/lib/firebase/auth"
 
 function DashboardContent() {
@@ -154,66 +152,61 @@ function DashboardContent() {
             await new Promise((resolve) => setTimeout(resolve, 500))
 
             setProgressStep(PROCESSING_STEPS[1])
-            const imageElement = await loadImageFromFile(selectedFile)
-            
+            await new Promise((resolve) => setTimeout(resolve, 300))
+
             setProgressStep(PROCESSING_STEPS[2])
-            const { landmarks, faceDetected, faceCount } = await detectFaceLandmarks(imageElement)
+            // Call the backend inference (orchestrator) — same path as the /analyze page
+            const form = new FormData()
+            form.append('image', selectedFile)
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'
+            const resp = await fetch(`${backendUrl}/analyze`, { method: 'POST', body: form })
+            const data: BackendAnalyzeApiResponse = await resp.json().catch(() => ({} as any))
 
-            if (!faceDetected) {
-                if (faceCount === 0) {
-                    setError(ERROR_CODES.NO_FACE_DETECTED)
-                } else if (faceCount > 1) {
-                    setError(ERROR_CODES.MULTIPLE_FACES_DETECTED)
-                } else {
-                    setError(ERROR_CODES.FACE_TOO_ANGLED_OR_SMALL)
-                }
+            if (!resp.ok) {
+                const code = 'error' in data ? (data.error as ErrorCode | undefined) : undefined
+                const mapped = (code && Object.values(ERROR_CODES).includes(code)) ? code : ERROR_CODES.UNKNOWN_ERROR
+                setError(mapped)
                 setAnalysisStatus('error')
                 toast({
-                    title: 'Face Detection Failed',
-                    description: faceCount === 0 
+                    title: 'Analysis Failed',
+                    description: mapped === ERROR_CODES.NO_FACE_DETECTED
                         ? 'No face detected. Please upload a clear front-facing photo.'
-                        : faceCount > 1
+                        : mapped === ERROR_CODES.MULTIPLE_FACES_DETECTED
                         ? 'Multiple faces detected. Please upload an image with a single face.'
-                        : 'Face is too angled or small. Please upload a clear front-facing photo.',
+                        : mapped === ERROR_CODES.FILE_TOO_LARGE
+                        ? 'File too large. Please upload an image under 5MB.'
+                        : 'Could not analyze the image. Please try again.',
                     variant: 'destructive',
                 })
                 return
             }
 
-            if (landmarks.length < 100) {
-                setError(ERROR_CODES.FACE_TOO_ANGLED_OR_SMALL)
-                setAnalysisStatus('error')
-                toast({
-                    title: 'Insufficient Landmarks',
-                    description: 'Could not detect enough facial features. Please upload a clearer image.',
-                    variant: 'destructive',
-                })
-                return
-            }
+            const okData = data as BackendAnalyzeResponse
 
             setProgressStep(PROCESSING_STEPS[3])
-            await new Promise((resolve) => setTimeout(resolve, 300))
-
-            const analysisData = calculateAestheticScore(landmarks)
-
+            await new Promise((resolve) => setTimeout(resolve, 200))
             setProgressStep(PROCESSING_STEPS[4])
-            await new Promise((resolve) => setTimeout(resolve, 300))
+            await new Promise((resolve) => setTimeout(resolve, 200))
 
+            const suggestions = Array.isArray(okData?.suggestions) ? okData.suggestions : []
             const analysisResult: AnalysisResult = {
-                score: analysisData.score,
-                metrics: analysisData.metrics,
-                landmarks: landmarks,
-                overlayTypeHints: {
+                score: Math.round(Number(okData?.score ?? 0)),
+                metrics: okData?.metrics || { symmetry: 0, proportions: 0, balance: 0 },
+                landmarks: Array.isArray(okData?.landmarks) ? okData.landmarks : [],
+                overlayTypeHints: okData?.overlayTypeHints || {
                     points: true,
                     outline: true,
                     mesh: false,
                 },
-                ratios: analysisData.ratios,
-                recommendations: analysisData.recommendations,
+                ratios: Array.isArray(okData?.ratios) ? okData.ratios : [],
+                recommendations: Array.isArray(okData?.recommendations) ? okData.recommendations : [],
+                recommendation_items: Array.isArray(okData?.recommendation_items) ? okData.recommendation_items : undefined,
+                suggestions,
                 notes: [
-                    'Analysis based on MediaPipe facial landmark detection (468 points).',
-                    'Results are calculated using geometric measurements and golden ratio principles.',
-                    'All processing is performed in your browser; no images are stored permanently.',
+                    suggestions.length > 0
+                        ? 'Analysis computed by backend models (beauty score, geometry diagnostics, and catalog suggestions).'
+                        : 'Analysis computed by backend models (beauty score + feature model).',
+                    'Images are processed temporarily for inference; not stored permanently by this app.',
                     'For best results, use a clear, front-facing photo with good lighting.',
                 ],
             }
