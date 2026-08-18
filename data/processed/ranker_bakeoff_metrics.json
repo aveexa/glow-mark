@@ -1,0 +1,173 @@
+{
+  "models": {
+    "bce_v1": {
+      "tag": "bce_v1",
+      "ckpt": "backend/models/suggestion_ranker_bce_v1.pt",
+      "k": 4,
+      "vocab_k": 48,
+      "n_val": 48,
+      "val_ndcg@4": 0.699144,
+      "val_map@4": 0.869792,
+      "evaluated_at": "2026-07-15T06:46:58.937996+00:00",
+      "n_test": 38,
+      "test_ndcg@4": 0.735865,
+      "test_map@4": 0.921053
+    },
+    "rl_v1": {
+      "tag": "rl_v1",
+      "ckpt": "backend/models/suggestion_ranker_rl_v1.pt",
+      "k": 4,
+      "vocab_k": 48,
+      "n_val": 48,
+      "val_ndcg@4": 0.806629,
+      "val_map@4": 0.914931,
+      "evaluated_at": "2026-07-15T06:47:14.160307+00:00",
+      "n_test": 38,
+      "test_ndcg@4": 0.818691,
+      "test_map@4": 0.930556
+    }
+  },
+  "updated_at": "2026-07-15T07:31:17.339764+00:00",
+  "ship_decision": {
+    "rule": "promote if rl.val_ndcg>=bce.val_ndcg AND rl.test_ndcg>=bce.test_ndcg-0.02",
+    "val_ok": true,
+    "test_ok": true,
+    "promote": true,
+    "winner": "rl_v1",
+    "production_ckpt": "backend/models/suggestion_ranker.pt",
+    "rollback_ckpt": "backend/models/suggestion_ranker_bce_v1.pt"
+  },
+  "phase5": {
+    "evaluated_at": "2026-07-15T07:31:17.339753+00:00",
+    "ckpt": "/Users/tharushasamarawickrama/Downloads/glow-mark/backend/models/suggestion_ranker.pt",
+    "k": 4,
+    "vocab_k": 48,
+    "n_val": 48,
+    "n_test": 38,
+    "val_ndcg@4": 0.806629,
+    "val_map@4": 0.914931,
+    "test_ndcg@4": 0.818691,
+    "test_map@4": 0.930556,
+    "coverage": {
+      "unique_pred_ids": 38,
+      "vocab_k": 48,
+      "pct_vocab_covered": 0.791667,
+      "top_id": "SUG_SYM_HIGH_01",
+      "top_id_share": 0.081395,
+      "top15": [
+        [
+          "SUG_SYM_HIGH_01",
+          28
+        ],
+        [
+          "SUG_NOSE_DEV_HIGH_01",
+          25
+        ],
+        [
+          "SUG_FACE_ASPECT_HIGH_01",
+          25
+        ],
+        [
+          "SUG_FACE_ASPECT_LOW_01",
+          24
+        ],
+        [
+          "SUG_MIDFACE_LOW_01",
+          24
+        ],
+        [
+          "SUG_MIDFACE_HIGH_01",
+          19
+        ],
+        [
+          "SUG_LOWERFACE_LOW_01",
+          19
+        ],
+        [
+          "SUG_JAW_ANGLE_LOW_01",
+          18
+        ],
+        [
+          "SUG_JAW_NARROW_01",
+          15
+        ],
+        [
+          "SUG_JAW_WIDE_01",
+          13
+        ],
+        [
+          "SUG_JAW_ANGLE_HIGH_01",
+          11
+        ],
+        [
+          "SUG_LOWERFACE_HIGH_01",
+          11
+        ],
+        [
+          "SUG_CHIN_NARROW_01",
+          11
+        ],
+        [
+          "SUG_EYE_WIDE_01",
+          9
+        ],
+        [
+          "SUG_EYE_OPEN_HIGH_01",
+          9
+        ]
+      ],
+      "all_ids_in_catalog": true
+    },
+    "confidence": {
+      "n_pred_slots": 344,
+      "mean": 0.880292,
+      "p50": 0.93463,
+      "p90": 0.997578,
+      "histogram_bins": [
+        "[0,0.2)",
+        "[0.2,0.4)",
+        "[0.4,0.6)",
+        "[0.6,0.8)",
+        "[0.8,1]"
+      ],
+      "histogram_counts": [
+        0,
+        1,
+        17,
+        63,
+        263
+      ]
+    },
+    "warns": [],
+    "spotcheck_n": 25,
+    "spotcheck_seed": 42,
+    "spotcheck_path": "/Users/tharushasamarawickrama/Downloads/glow-mark/data/labeling/spotcheck/suggestion_ranker_spotcheck_25_test.csv",
+    "ship_gate": {
+      "rule": "rl.val_ndcg>=bce.val_ndcg AND rl.test_ndcg>=bce.test_ndcg-0.02",
+      "bce_val_ndcg": 0.699144,
+      "bce_test_ndcg": 0.735865,
+      "rl_val_ndcg": 0.806629,
+      "rl_test_ndcg": 0.818691,
+      "val_ok": true,
+      "test_ok": true,
+      "ship_gate_pass": true,
+      "winner": "rl_v1"
+    },
+    "ship_gate_pass": true,
+    "production_restored_to_bce": false,
+    "serve_smoke": {
+      "analyze_status": "fallback_predict_suggestions_missing_beauty_reco",
+      "beauty_ckpt_present": false,
+      "reco_ckpt_present": false,
+      "n_suggestions": 4,
+      "suggestion_ids": [
+        "SUG_FACE_ASPECT_HIGH_01",
+        "SUG_JAW_WIDE_01",
+        "SUG_JAW_ANGLE_LOW_01",
+        "SUG_MIDFACE_HIGH_01"
+      ],
+      "sample_id": "lfw_00288",
+      "image_path": "data/raw/images/lfw_00288.jpg"
+    }
+  }
+}

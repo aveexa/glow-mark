@@ -1,0 +1,62 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+
+
+# python / backend
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+# raw images (~5k LFW jpgs — do not commit)
+data/raw/images/
+# interim pipeline caches (regenerable from extract scripts)
+data/interim/landmarks_468/
+data/interim/landmarks_68/
+data/interim/geometry_features/*.json
+*.npy
+# optional: large model weights (keep if you want clone-and-run;
+# these are currently small ~1MB total — leave commented out)
+# backend/models/*.pt

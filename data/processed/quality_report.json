@@ -1,0 +1,305 @@
+{
+  "status": "PASS",
+  "fails": [],
+  "warns": [
+    "identity_map_missing: flat lfw_##### IDs \u2014 cannot verify person-level leakage",
+    "balance: 36 suggestion_ids have <50 positives (train with pos_weight; expand data later). Examples: [('SUG_PHILTRUM_LOW_01', 1), ('SUG_OK_KEEP_01', 1), ('SUG_OK_SKIN_PREP_01', 1), ('SUG_UPPER_LIP_LOW_01', 3), ('SUG_NOSE_LONG_01', 4), ('SUG_MOUTH_TILT_HIGH_01', 6), ('SUG_PHILTRUM_HIGH_01', 6), ('SUG_LIP_FULL_01', 7), ('SUG_LIP_THIN_01', 7), ('SUG_MOUTH_NARROW_01', 7)]"
+  ],
+  "info": [
+    "validate_dataset_schema.py OK",
+    "near-duplicate conflicting-label check OK",
+    "spotcheck export: /Users/tharushasamarawickrama/Downloads/glow-mark/data/labeling/spotcheck/spotcheck_100.csv (100 rows)"
+  ],
+  "summary": {
+    "n_rows": 412,
+    "n_unique_suggestion_ids": 48,
+    "id_counts": {
+      "SUG_FACE_ASPECT_LOW_01": 86,
+      "SUG_MIDFACE_HIGH_01": 85,
+      "SUG_SYM_HIGH_01": 85,
+      "SUG_FACE_ASPECT_HIGH_01": 84,
+      "SUG_NOSE_DEV_HIGH_01": 84,
+      "SUG_MIDFACE_LOW_01": 80,
+      "SUG_LOWERFACE_LOW_01": 79,
+      "SUG_JAW_NARROW_01": 77,
+      "SUG_JAW_ANGLE_LOW_01": 72,
+      "SUG_LOWERFACE_HIGH_01": 72,
+      "SUG_JAW_WIDE_01": 70,
+      "SUG_JAW_ANGLE_HIGH_01": 66,
+      "SUG_CHIN_NARROW_01": 47,
+      "SUG_CHIN_LONG_01": 46,
+      "SUG_CHIN_WIDE_01": 42,
+      "SUG_CHIN_SHORT_01": 40,
+      "SUG_EYE_OPEN_HIGH_01": 40,
+      "SUG_EYE_SIZE_LOW_01": 36,
+      "SUG_EYE_WIDE_01": 32,
+      "SUG_CHEEK_NARROW_01": 31,
+      "SUG_EYE_CLOSE_01": 31,
+      "SUG_CHEEK_WIDE_01": 30,
+      "SUG_EYE_OPEN_LOW_01": 29,
+      "SUG_EYE_TILT_HIGH_01": 24,
+      "SUG_EYE_TILT_LOW_01": 22,
+      "SUG_EYE_SIZE_HIGH_01": 19,
+      "SUG_LOWER_CHEEK_LOW_01": 18,
+      "SUG_LOWER_CHEEK_HIGH_01": 17,
+      "SUG_BROW_LOW_01": 17,
+      "SUG_NOSE_NARROW_01": 15,
+      "SUG_NOSE_SHORT_01": 14,
+      "SUG_BROW_TILT_HIGH_01": 14,
+      "SUG_MOUTH_WIDE_01": 13,
+      "SUG_BROW_HIGH_01": 11,
+      "SUG_BROW_TILT_LOW_01": 9,
+      "SUG_MOUTH_TILT_LOW_01": 9,
+      "SUG_UPPER_LIP_HIGH_01": 8,
+      "SUG_NOSE_WIDE_01": 8,
+      "SUG_LIP_FULL_01": 7,
+      "SUG_LIP_THIN_01": 7,
+      "SUG_MOUTH_NARROW_01": 7,
+      "SUG_MOUTH_TILT_HIGH_01": 6,
+      "SUG_PHILTRUM_HIGH_01": 6,
+      "SUG_NOSE_LONG_01": 4,
+      "SUG_UPPER_LIP_LOW_01": 3,
+      "SUG_PHILTRUM_LOW_01": 1,
+      "SUG_OK_KEEP_01": 1,
+      "SUG_OK_SKIN_PREP_01": 1
+    },
+    "rare_ids": [
+      {
+        "id": "SUG_PHILTRUM_LOW_01",
+        "count": 1
+      },
+      {
+        "id": "SUG_OK_KEEP_01",
+        "count": 1
+      },
+      {
+        "id": "SUG_OK_SKIN_PREP_01",
+        "count": 1
+      },
+      {
+        "id": "SUG_UPPER_LIP_LOW_01",
+        "count": 3
+      },
+      {
+        "id": "SUG_NOSE_LONG_01",
+        "count": 4
+      },
+      {
+        "id": "SUG_MOUTH_TILT_HIGH_01",
+        "count": 6
+      },
+      {
+        "id": "SUG_PHILTRUM_HIGH_01",
+        "count": 6
+      },
+      {
+        "id": "SUG_LIP_FULL_01",
+        "count": 7
+      },
+      {
+        "id": "SUG_LIP_THIN_01",
+        "count": 7
+      },
+      {
+        "id": "SUG_MOUTH_NARROW_01",
+        "count": 7
+      },
+      {
+        "id": "SUG_UPPER_LIP_HIGH_01",
+        "count": 8
+      },
+      {
+        "id": "SUG_NOSE_WIDE_01",
+        "count": 8
+      },
+      {
+        "id": "SUG_BROW_TILT_LOW_01",
+        "count": 9
+      },
+      {
+        "id": "SUG_MOUTH_TILT_LOW_01",
+        "count": 9
+      },
+      {
+        "id": "SUG_BROW_HIGH_01",
+        "count": 11
+      },
+      {
+        "id": "SUG_MOUTH_WIDE_01",
+        "count": 13
+      },
+      {
+        "id": "SUG_NOSE_SHORT_01",
+        "count": 14
+      },
+      {
+        "id": "SUG_BROW_TILT_HIGH_01",
+        "count": 14
+      },
+      {
+        "id": "SUG_NOSE_NARROW_01",
+        "count": 15
+      },
+      {
+        "id": "SUG_LOWER_CHEEK_HIGH_01",
+        "count": 17
+      },
+      {
+        "id": "SUG_BROW_LOW_01",
+        "count": 17
+      },
+      {
+        "id": "SUG_LOWER_CHEEK_LOW_01",
+        "count": 18
+      },
+      {
+        "id": "SUG_EYE_SIZE_HIGH_01",
+        "count": 19
+      },
+      {
+        "id": "SUG_EYE_TILT_LOW_01",
+        "count": 22
+      },
+      {
+        "id": "SUG_EYE_TILT_HIGH_01",
+        "count": 24
+      },
+      {
+        "id": "SUG_EYE_OPEN_LOW_01",
+        "count": 29
+      },
+      {
+        "id": "SUG_CHEEK_WIDE_01",
+        "count": 30
+      },
+      {
+        "id": "SUG_CHEEK_NARROW_01",
+        "count": 31
+      },
+      {
+        "id": "SUG_EYE_CLOSE_01",
+        "count": 31
+      },
+      {
+        "id": "SUG_EYE_WIDE_01",
+        "count": 32
+      },
+      {
+        "id": "SUG_EYE_SIZE_LOW_01",
+        "count": 36
+      },
+      {
+        "id": "SUG_CHIN_SHORT_01",
+        "count": 40
+      },
+      {
+        "id": "SUG_EYE_OPEN_HIGH_01",
+        "count": 40
+      },
+      {
+        "id": "SUG_CHIN_WIDE_01",
+        "count": 42
+      },
+      {
+        "id": "SUG_CHIN_LONG_01",
+        "count": 46
+      },
+      {
+        "id": "SUG_CHIN_NARROW_01",
+        "count": 47
+      }
+    ],
+    "dead_features": [],
+    "dup_conflicts": [],
+    "splits": {
+      "test": 38,
+      "train": 326,
+      "val": 48
+    },
+    "sources": {
+      "lfw": 412
+    }
+  },
+  "top_suggestion_ids": [
+    [
+      "SUG_FACE_ASPECT_LOW_01",
+      86
+    ],
+    [
+      "SUG_MIDFACE_HIGH_01",
+      85
+    ],
+    [
+      "SUG_SYM_HIGH_01",
+      85
+    ],
+    [
+      "SUG_FACE_ASPECT_HIGH_01",
+      84
+    ],
+    [
+      "SUG_NOSE_DEV_HIGH_01",
+      84
+    ],
+    [
+      "SUG_MIDFACE_LOW_01",
+      80
+    ],
+    [
+      "SUG_LOWERFACE_LOW_01",
+      79
+    ],
+    [
+      "SUG_JAW_NARROW_01",
+      77
+    ],
+    [
+      "SUG_JAW_ANGLE_LOW_01",
+      72
+    ],
+    [
+      "SUG_LOWERFACE_HIGH_01",
+      72
+    ],
+    [
+      "SUG_JAW_WIDE_01",
+      70
+    ],
+    [
+      "SUG_JAW_ANGLE_HIGH_01",
+      66
+    ],
+    [
+      "SUG_CHIN_NARROW_01",
+      47
+    ],
+    [
+      "SUG_CHIN_LONG_01",
+      46
+    ],
+    [
+      "SUG_CHIN_WIDE_01",
+      42
+    ],
+    [
+      "SUG_CHIN_SHORT_01",
+      40
+    ],
+    [
+      "SUG_EYE_OPEN_HIGH_01",
+      40
+    ],
+    [
+      "SUG_EYE_SIZE_LOW_01",
+      36
+    ],
+    [
+      "SUG_EYE_WIDE_01",
+      32
+    ],
+    [
+      "SUG_CHEEK_NARROW_01",
+      31
+    ]
+  ]
+}

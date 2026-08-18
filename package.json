@@ -1,0 +1,48 @@
+{
+  "name": "glow-mark",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "backend:venv": "python -m venv backend/.venv",
+    "backend:install": "backend\\\\.venv\\\\Scripts\\\\python -m pip install -r backend/requirements.txt",
+    "backend:dev": "backend\\\\.venv\\\\Scripts\\\\python backend/app.py"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.3.0",
+    "@mediapipe/tasks-vision": "^0.10.32",
+    "@radix-ui/react-progress": "^1.0.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "@radix-ui/react-toast": "^1.1.5",
+    "@react-three/drei": "^9.88.0",
+    "@react-three/fiber": "^8.15.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "firebase": "^12.10.0",
+    "framer-motion": "^12.34.3",
+    "lucide-react": "^0.294.0",
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.48.0",
+    "tailwind-merge": "^2.0.0",
+    "three": "^0.183.2",
+    "zod": "^3.22.0",
+    "zustand": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.51.0",
+    "eslint-config-next": "^14.0.0",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.5",
+    "typescript": "^5.2.2"
+  }
+}

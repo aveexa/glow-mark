@@ -1,0 +1,8 @@
+tag,category,test_ndcg@4,test_map@4,val_ndcg@4,val_map@4,train_seconds,infer_ms_per_sample,n_params
+lightgbm,classical_gbdt,0.916648,0.993421,0.900502,0.991319,0.9964,3.349097,54232
+listnet,listwise_supervised,0.910134,0.971491,0.908223,0.980903,0.7998,0.001158,35120
+logistic,classical_linear,0.877286,0.975877,0.890386,0.982639,0.16,0.045438,4608
+reinforce_ndcg,listwise_rl,0.833134,0.936404,0.831261,0.933449,1.361,0.001253,35120
+approx_ndcg,metric_listwise,0.805035,0.883041,0.821668,0.917824,0.7683,0.001213,35120
+bce,pointwise_supervised,0.785082,0.925439,0.757908,0.913194,0.4097,0.001389,35120
+bpr_pairwise,pairwise_ltr,0.777715,0.909357,0.72809,0.896991,1.3027,0.001214,35120

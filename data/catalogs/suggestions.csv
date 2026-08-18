@@ -1,0 +1,51 @@
+suggestion_id,feature,trigger_class,category,severity,approved_text,forbidden,active
+SUG_OK_KEEP_01,general,ok,general,info,"Most measured proportions sit in a typical range. Maintain consistent lighting and a front-facing pose for tracking.",false,true
+SUG_OK_SKIN_PREP_01,general,ok,skin,info,"For clearer before/after comparisons, use even daylight, a clean lens, and the same camera distance each time.",false,true
+SUG_LIGHTING_01,capture,ok,capture,info,"Uneven lighting can exaggerate shadows and skew readings. Retake facing a window or soft front light without harsh side shadows.",false,true
+SUG_POSE_RETAKE_01,capture,ok,capture,info,"A slight head turn can change measured proportions. Retake centered to the camera with eyes level and chin parallel to the floor.",false,true
+SUG_SYM_HIGH_01,symmetry_error,high,symmetry,info,"Left–right alignment shows elevated asymmetry. Retake with face centered and even lighting before drawing styling conclusions.",false,true
+SUG_FACE_ASPECT_LOW_01,face_aspect_ratio,low,face,mild,"Face width relative to height reads below your typical band. Soft volume at the sides of the hair can balance a longer vertical look in photos.",false,true
+SUG_FACE_ASPECT_HIGH_01,face_aspect_ratio,high,face,mild,"Face width relative to height reads above your typical band. Lengthening styles or center-part framing can refine the silhouette in photos.",false,true
+SUG_MIDFACE_LOW_01,midface_length_ratio,low,face,mild,"Midface length reads below your typical band. Soft highlight on the cheekbones can add lift and openness in makeup applications.",false,true
+SUG_MIDFACE_HIGH_01,midface_length_ratio,high,face,mild,"Midface length reads above your typical band. Contouring just under the cheekbones can shorten the midface visually in photos.",false,true
+SUG_LOWERFACE_LOW_01,lowerface_length_ratio,low,face,mild,"Lower face length reads below your typical band. Keeping bangs shorter or swept up can open the lower third visually.",false,true
+SUG_LOWERFACE_HIGH_01,lowerface_length_ratio,high,face,mild,"Lower face length reads above your typical band. Soft fringe or volume at mid-length hair can balance a longer lower third in photos.",false,true
+SUG_JAW_NARROW_01,jaw_width_ratio,low,jaw,mild,"Jaw width sits below the typical band. Soft contour along the jawline and side hair density can add visual structure in photos.",false,true
+SUG_JAW_WIDE_01,jaw_width_ratio,high,jaw,mild,"Jaw width sits above the typical band. Hairstyles with volume at the crown often balance a stronger jaw visually.",false,true
+SUG_JAW_ANGLE_LOW_01,jaw_angle_sharpness,low,jaw,mild,"Jaw angle reads softer than your typical band. A defined makeup contour at the mandibular corner can sharpen the outline in photos.",false,true
+SUG_JAW_ANGLE_HIGH_01,jaw_angle_sharpness,high,jaw,mild,"Jaw angle reads sharper than your typical band. Diffused contour and softer hair near the jaw can ease the edge in photos.",false,true
+SUG_CHIN_SHORT_01,chin_length_ratio,low,chin,mild,"Chin length reads below your typical band. A soft highlight on the chin tip can add projection for photos.",false,true
+SUG_CHIN_LONG_01,chin_length_ratio,high,chin,mild,"Chin length reads above your typical band. Soft matte contour under the chin tip can shorten the look in photos.",false,true
+SUG_CHIN_NARROW_01,chin_width_ratio,low,chin,mild,"Chin width reads narrower than your typical band. Horizontal highlight across the chin can widen the tip visually.",false,true
+SUG_CHIN_WIDE_01,chin_width_ratio,high,chin,mild,"Chin width reads wider than your typical band. Narrower vertical highlight and soft side contour can refine the tip in photos.",false,true
+SUG_CHEEK_NARROW_01,cheekbone_width_ratio,low,cheeks,mild,"Cheekbone width reads below your typical band. Highlight placed on the high cheek can lift and widen the midface visually.",false,true
+SUG_CHEEK_WIDE_01,cheekbone_width_ratio,high,cheeks,mild,"Cheekbone width reads above your typical band. Soft contour beneath the zygomatic arch can slim the midface in photos.",false,true
+SUG_LOWER_CHEEK_LOW_01,lower_cheek_ratio,low,cheeks,mild,"Lower cheek fullness reads below your typical band. Warm blush placed slightly lower on the cheek can add soft volume.",false,true
+SUG_LOWER_CHEEK_HIGH_01,lower_cheek_ratio,high,cheeks,mild,"Lower cheek fullness reads above your typical band. Blush set higher toward the cheekbone can lift attention away from heaviness.",false,true
+SUG_EYE_OPEN_LOW_01,eye_openness_ratio,low,eyes,mild,"Eye openness reads below your typical band. Soft nude lid and lifted outer corner liner can open the eye in makeup.",false,true
+SUG_EYE_OPEN_HIGH_01,eye_openness_ratio,high,eyes,mild,"Eye openness reads above your typical band. Softened crease definition can balance a very open eye look in photos.",false,true
+SUG_EYE_SIZE_LOW_01,eye_size_ratio,low,eyes,mild,"Eye size relative to face width reads below your typical band. Light shimmer on the center lid can enlarge the look in photos.",false,true
+SUG_EYE_SIZE_HIGH_01,eye_size_ratio,high,eyes,mild,"Eye size relative to face width reads above your typical band. Softer brow and lid contrast can keep the focus balanced.",false,true
+SUG_EYE_CLOSE_01,eye_spacing_ratio,low,eyes,mild,"Eye spacing reads slightly close. Highlighting the outer eye corners can balance the look in makeup applications.",false,true
+SUG_EYE_WIDE_01,eye_spacing_ratio,high,eyes,mild,"Eye spacing reads wider than your typical band. Soft emphasis near the inner corners can draw features slightly closer visually.",false,true
+SUG_EYE_TILT_LOW_01,eye_tilt_deg,low,eyes,mild,"Eye tilt reads flatter than your typical band. A gentle upward wing at the outer corner can lift the eye line in makeup.",false,true
+SUG_EYE_TILT_HIGH_01,eye_tilt_deg,high,eyes,mild,"Eye tilt reads more angled than your typical band. Softening the outer wing keeps the gaze from reading overly dramatic in photos.",false,true
+SUG_BROW_LOW_01,brow_height_ratio,low,brows,mild,"Brow height reads lower than your typical band. Soft highlight under the arch can lift the brow visually.",false,true
+SUG_BROW_HIGH_01,brow_height_ratio,high,brows,mild,"Brow height reads higher than your typical band. Keeping brows softly filled without rising too high at the tail balances the forehead.",false,true
+SUG_BROW_TILT_LOW_01,brow_tilt_deg,low,brows,mild,"Brow tilt reads flatter than your typical band. A slight lift at the outer third of the brow can refine the frame.",false,true
+SUG_BROW_TILT_HIGH_01,brow_tilt_deg,high,brows,mild,"Brow tilt reads steeper than your typical band. Softening the outer brow angle can ease a sharp lift in photos.",false,true
+SUG_NOSE_NARROW_01,nose_width_ratio,low,nose,mild,"Nose width reads below your typical band. Soft diffuse highlight on the bridge can avoid over-narrowing the look in photos.",false,true
+SUG_NOSE_WIDE_01,nose_width_ratio,high,nose,mild,"Nose width reads above your population band. Soft contouring along the nasal sidewalls can create a narrower visual line in photos.",false,true
+SUG_NOSE_SHORT_01,nose_length_ratio,low,nose,mild,"Nose length reads below your typical band. A slender bridge highlight can lengthen the nose visually in makeup.",false,true
+SUG_NOSE_LONG_01,nose_length_ratio,high,nose,mild,"Nose length reads above your typical band. Soft matte at the tip and shorter bridge highlight can shorten the look in photos.",false,true
+SUG_NOSE_DEV_HIGH_01,nose_tip_deviation_ratio,high,nose,info,"Nose tip alignment reads off midline more than your typical band. Retake front-facing with even light before styling decisions.",false,true
+SUG_MOUTH_NARROW_01,mouth_width_ratio,low,mouth,mild,"Mouth width reads below your typical band. Extending lip liner slightly at the corners can widen the smile line in photos.",false,true
+SUG_MOUTH_WIDE_01,mouth_width_ratio,high,mouth,mild,"Mouth width reads above the typical band. Softer lip liner that stays inside the natural corner can refine the look in photos.",false,true
+SUG_MOUTH_TILT_LOW_01,mouth_corner_tilt_deg,low,mouth,mild,"Mouth corner tilt reads downward relative to your typical band. A subtle outer-corner lift with liner can brighten the smile line.",false,true
+SUG_MOUTH_TILT_HIGH_01,mouth_corner_tilt_deg,high,mouth,mild,"Mouth corner tilt reads upward relative to your typical band. Even lip definition keeps the expression reading natural in photos.",false,true
+SUG_LIP_THIN_01,lip_thickness_ratio,low,lips,mild,"Lip thickness is below the typical band. Lip-focused makeup with liner and gloss can enhance perceived fullness.",false,true
+SUG_LIP_FULL_01,lip_thickness_ratio,high,lips,mild,"Lip thickness reads above your typical band. Matte finishes and staying inside the natural border can refine the look in photos.",false,true
+SUG_UPPER_LIP_LOW_01,upper_lip_ratio,low,lips,mild,"Upper lip vermilion reads below your typical band. Emphasizing the cupid’s bow with soft liner can balance the upper lip.",false,true
+SUG_UPPER_LIP_HIGH_01,upper_lip_ratio,high,lips,mild,"Upper lip vermilion reads above your typical band. Soft even color without over-lining the bow keeps proportions balanced.",false,true
+SUG_PHILTRUM_LOW_01,philtrum_ratio,low,lips,mild,"Philtrum length reads below your typical band. Soft matte under the nose and a defined upper lip border can balance the area visually.",false,true
+SUG_PHILTRUM_HIGH_01,philtrum_ratio,high,lips,mild,"Philtrum length reads above your typical band. Highlight on the upper lip center can shorten the space visually in photos.",false,true

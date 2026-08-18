@@ -1,0 +1,69 @@
+
+> glow-mark@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Skipped not serializable cache item 'Compilation/modules|D:\EXE\glow-mark\node_modules\next\dist\build\webpack\loaders\css-loader\src\index.js??ruleSet[1].rules[14].oneOf[12].use[2]!D:\EXE\glow-mark\node_modules\next\dist\build\webpack\loaders\postcss-loader\src\index.js??ruleSet[1].rules[14].oneOf[12].use[3]!D:\EXE\glow-mark\app\globals.css': No serializer registered for PostCSSSyntaxError
+<w> while serializing webpack/lib/cache/PackFileCacheStrategy.PackContentItems -> webpack/lib/NormalModule -> webpack/lib/ModuleBuildError -> PostCSSSyntaxError
+Failed to compile.
+
+./app/globals.css:58:5
+Syntax error: D:\EXE\glow-mark\app\globals.css The `shadow-[0_8px_32px_rgba(0,` class does not exist. If `shadow-[0_8px_32px_rgba(0,` is a custom class, make sure it is defined within a `@layer` directive.
+
+ [90m 56 | [39m[36m@layer[39m utilities [33m{[39m
+ [90m 57 | [39m  [33m.glass-panel[39m [33m{[39m
+[1m[31m>[39m[22m[90m 58 | [39m    [36m@apply[39m bg-card/40 backdrop-blur-xl border border-white/10 shadow-[33m[[39m[36m0_8px_32px_rgba[39m[36m(0, 0, 0, 0.4)[39m[33m][39m[33m;[39m
+ [90m    | [39m    [1m[31m^[39m[22m
+ [90m 59 | [39m  [33m}[39m
+ [90m 60 | [39m
+
+./app/globals.css
+Syntax error: D:\EXE\glow-mark\app\globals.css The `shadow-[0_8px_32px_rgba(0,` class does not exist. If `shadow-[0_8px_32px_rgba(0,` is a custom class, make sure it is defined within a `@layer` directive. (58:5)
+
+ [90m 56 | [39m[36m@layer[39m utilities [33m{[39m
+ [90m 57 | [39m  [33m.glass-panel[39m [33m{[39m
+[1m[31m>[39m[22m[90m 58 | [39m    [36m@apply[39m bg-card/40 backdrop-blur-xl border border-white/10 shadow-[33m[[39m[36m0_8px_32px_rgba[39m[36m(0, 0, 0, 0.4)[39m[33m][39m[33m;[39m
+ [90m    | [39m    [1m[31m^[39m[22m
+ [90m 59 | [39m  [33m}[39m
+ [90m 60 | [39m
+
+    at tryRunOrWebpackError (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:312989)
+    at __webpack_require_module__ (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:131165)
+    at __nested_webpack_require_153728__ (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:130607)
+    at D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:131454
+    at symbolIterator (D:\EXE\glow-mark\node_modules\next\dist\compiled\neo-async\async.js:1:14444)
+    at done (D:\EXE\glow-mark\node_modules\next\dist\compiled\neo-async\async.js:1:14824)
+    at Hook.eval [as callAsync] (eval at create (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:13:28858), <anonymous>:15:1)
+    at Hook.CALL_ASYNC_DELEGATE [as _callAsync] (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:13:26012)
+    at D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:130328
+    at symbolIterator (D:\EXE\glow-mark\node_modules\next\dist\compiled\neo-async\async.js:1:14402)
+-- inner error --
+Syntax error: D:\EXE\glow-mark\app\globals.css The `shadow-[0_8px_32px_rgba(0,` class does not exist. If `shadow-[0_8px_32px_rgba(0,` is a custom class, make sure it is defined within a `@layer` directive. (58:5)
+
+ [90m 56 | [39m[36m@layer[39m utilities [33m{[39m
+ [90m 57 | [39m  [33m.glass-panel[39m [33m{[39m
+[1m[31m>[39m[22m[90m 58 | [39m    [36m@apply[39m bg-card/40 backdrop-blur-xl border border-white/10 shadow-[33m[[39m[36m0_8px_32px_rgba[39m[36m(0, 0, 0, 0.4)[39m[33m][39m[33m;[39m
+ [90m    | [39m    [1m[31m^[39m[22m
+ [90m 59 | [39m  [33m}[39m
+ [90m 60 | [39m
+
+    at Object.<anonymous> (D:\EXE\glow-mark\node_modules\next\dist\build\webpack\loaders\css-loader\src\index.js??ruleSet[1].rules[14].oneOf[12].use[2]!D:\EXE\glow-mark\node_modules\next\dist\build\webpack\loaders\postcss-loader\src\index.js??ruleSet[1].rules[14].oneOf[12].use[3]!D:\EXE\glow-mark\app\globals.css:1:7)
+    at D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:922493
+    at Hook.eval [as call] (eval at create (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:13:28636), <anonymous>:7:1)
+    at Hook.CALL_DELEGATE [as _call] (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:13:25906)
+    at D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:131198
+    at tryRunOrWebpackError (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:312943)
+    at __webpack_require_module__ (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:131165)
+    at __nested_webpack_require_153728__ (D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:130607)
+    at D:\EXE\glow-mark\node_modules\next\dist\compiled\webpack\bundle5.js:28:131454
+    at symbolIterator (D:\EXE\glow-mark\node_modules\next\dist\compiled\neo-async\async.js:1:14444)
+
+Generated code for D:\EXE\glow-mark\node_modules\next\dist\build\webpack\loaders\css-loader\src\index.js??ruleSet[1].rules[14].oneOf[12].use[2]!D:\EXE\glow-mark\node_modules\next\dist\build\webpack\loaders\postcss-loader\src\index.js??ruleSet[1].rules[14].oneOf[12].use[3]!D:\EXE\glow-mark\app\globals.css
+
+Import trace for requested module:
+./app/globals.css
+
+
+> Build failed because of webpack errors
