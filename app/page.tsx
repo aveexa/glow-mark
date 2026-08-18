@@ -60,7 +60,7 @@ export default function Home() {
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <Link href="/analyze">
+              <Link href="/dashboard">
                 <Button size="lg" className="group text-lg px-8 py-7 h-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all duration-300 shadow-[0_0_40px_-5px_hsl(45,100%,50%,0.5)] rounded-2xl border border-black/5 text-black font-medium">
                   <span className="mr-2">Start Analysis</span>
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -191,7 +191,7 @@ export default function Home() {
               <Link href="/privacy" className="hover:text-primary transition-colors font-medium">
                 Privacy Policy
               </Link>
-              <Link href="/analyze" className="hover:text-primary transition-colors font-medium">
+              <Link href="/dashboard" className="hover:text-primary transition-colors font-medium">
                 Start Analysis
               </Link>
             </div>

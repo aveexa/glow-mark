@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    // Single analysis surface: the Dashboard. Any /analyze request → /dashboard.
+    return [
+      { source: '/analyze', destination: '/dashboard', permanent: false },
+    ]
+  },
   webpack: (config, { isServer }) => {
     // Handle MediaPipe WASM files
     if (!isServer) {
