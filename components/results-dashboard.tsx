@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AnalysisResult } from '@/lib/types'
 import { useAnalysisStore } from '@/store/analysis-store'
-import { Eye, EyeOff, Trash2, Upload, Sparkles, Activity, ShieldAlert, BadgeInfo, Box } from 'lucide-react'
+import { Eye, EyeOff, Trash2, Upload, Sparkles, Activity, ShieldAlert, BadgeInfo } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { FaceMesh3D } from '@/components/face-mesh-3d'
 
 interface ResultsDashboardProps {
   result: AnalysisResult
@@ -361,20 +360,13 @@ export function ResultsDashboard({
             <CardContent className="p-0">
               <Tabs defaultValue="insights" className="w-full">
                 <TabsList className="w-full flex border-b border-black/5 bg-white/[0.02] p-0 h-14 rounded-t-xl overflow-x-auto overflow-y-hidden custom-scrollbar">
-                  {['Insights', 'Ratios', 'Recommendations', '3D View', 'Notes'].map((tab) => (
+                  {['Insights', 'Ratios', 'Recommendations', 'Notes'].map((tab) => (
                     <TabsTrigger
                       key={tab.toLowerCase().replace(' ', '-')}
                       value={tab.toLowerCase().replace(' ', '-')}
                       className="flex-1 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary text-muted-foreground rounded-none h-full transition-all text-sm font-semibold tracking-wide uppercase"
                     >
-                      {tab === '3D View' ? (
-                        <span className="flex items-center gap-1">
-                          <Box className="h-3 w-3" />
-                          3D View
-                        </span>
-                      ) : (
-                        tab
-                      )}
+                      {tab}
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -499,23 +491,6 @@ export function ResultsDashboard({
                           </div>
                         )
                       })()}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="3d-view" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-                    <div className="space-y-4">
-                      <div className="p-6 bg-primary/5 rounded-2xl border border-primary/20">
-                        <div className="flex items-start gap-4 mb-4">
-                          <Box className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-                          <div>
-                            <h3 className="text-lg font-semibold text-foreground mb-2">3D Facial Mesh Visualization</h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              Interactive 3D representation of your facial landmarks. Rotate, zoom, and explore your facial structure from all angles.
-                            </p>
-                          </div>
-                        </div>
-                        <FaceMesh3D landmarks={result.landmarks} />
-                      </div>
                     </div>
                   </TabsContent>
 
