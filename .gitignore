@@ -60,3 +60,7 @@ data/interim/geometry_features/*.json
 # optional: large model weights (keep if you want clone-and-run;
 # these are currently small ~1MB total — leave commented out)
 # backend/models/*.pt
+
+
+# resources
+/datasets/
