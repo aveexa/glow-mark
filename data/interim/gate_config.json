@@ -1,0 +1,217 @@
+{
+  "pose": {
+    "yaw_max_deg": 25,
+    "pitch_max_deg": 20,
+    "roll_max_deg": 25.0,
+    "roll_autocorrect": true
+  },
+  "neutrality": {
+    "percentiles": {
+      "jawOpen": 0.96,
+      "mouthSmileLeft": 0.97,
+      "mouthSmileRight": 0.97,
+      "mouthPucker": 0.98,
+      "mouthPressLeft": 0.98,
+      "mouthPressRight": 0.98,
+      "mouthFunnel": 0.98,
+      "browInnerUp": 0.98,
+      "browDownLeft": 0.98,
+      "browDownRight": 0.98,
+      "browOuterUpLeft": 0.98,
+      "browOuterUpRight": 0.98,
+      "eyeBlinkLeft": 0.98,
+      "eyeBlinkRight": 0.98,
+      "eyeSquintLeft": 0.98,
+      "eyeSquintRight": 0.98
+    },
+    "global": {
+      "jawOpen": 0.27033932447433456,
+      "mouthSmileLeft": 0.951815574169159,
+      "mouthSmileRight": 0.9551560908555985,
+      "mouthPucker": 0.8842766976356509,
+      "mouthPressLeft": 0.3595989763736727,
+      "mouthPressRight": 0.39018644571304373,
+      "mouthFunnel": 0.1063839684426786,
+      "browInnerUp": 0.7576641166210181,
+      "browDownLeft": 0.7019658815860751,
+      "browDownRight": 0.700059417486191,
+      "browOuterUpLeft": 0.7540531432628633,
+      "browOuterUpRight": 0.6847563648223879,
+      "eyeBlinkLeft": 0.6418109476566315,
+      "eyeBlinkRight": 0.6203962957859042,
+      "eyeSquintLeft": 0.787827244997025,
+      "eyeSquintRight": 0.7156831812858584
+    },
+    "per_region": {
+      "jawOpen": {
+        "Black": 0.24675339519977563,
+        "East Asian": 0.265248634815216,
+        "Indian": 0.16226845264434808,
+        "Latino_Hispanic": 0.19562916934490168,
+        "Middle Eastern": 0.35808404207229616,
+        "Southeast Asian": 0.29512921214103677,
+        "White": 0.3555716800689696
+      },
+      "mouthSmileLeft": {
+        "Black": 0.9603025448322298,
+        "East Asian": 0.8763209331035613,
+        "Indian": 0.9545843476057052,
+        "Latino_Hispanic": 0.9658720940351485,
+        "Middle Eastern": 0.950078661441803,
+        "Southeast Asian": 0.9287322962284087,
+        "White": 0.9507037127017975
+      },
+      "mouthSmileRight": {
+        "Black": 0.9627010321617127,
+        "East Asian": 0.87512311398983,
+        "Indian": 0.9477429193258285,
+        "Latino_Hispanic": 0.9596393859386444,
+        "Middle Eastern": 0.9508743822574613,
+        "Southeast Asian": 0.9354249131679534,
+        "White": 0.9596646082401277
+      },
+      "mouthPucker": {
+        "Black": 0.7220646667480465,
+        "East Asian": 0.9362396168708801,
+        "Indian": 0.8365221226215366,
+        "Latino_Hispanic": 0.8941843843460082,
+        "Middle Eastern": 0.6898384213447571,
+        "Southeast Asian": 0.9282856833934786,
+        "White": 0.8262872791290286
+      },
+      "mouthPressLeft": {
+        "Black": 0.4245981681346881,
+        "East Asian": 0.2855141049623489,
+        "Indian": 0.3255175077915192,
+        "Latino_Hispanic": 0.4283218705654134,
+        "Middle Eastern": 0.4316373336315155,
+        "Southeast Asian": 0.27302776694297826,
+        "White": 0.3652560192346574
+      },
+      "mouthPressRight": {
+        "Black": 0.35466449260711663,
+        "East Asian": 0.27879972279071796,
+        "Indian": 0.3417683577537537,
+        "Latino_Hispanic": 0.4095742380619042,
+        "Middle Eastern": 0.42749189615249633,
+        "Southeast Asian": 0.30637192070484165,
+        "White": 0.4639646846055986
+      },
+      "mouthFunnel": {
+        "Black": 0.25728326916694577,
+        "East Asian": 0.07901895150542255,
+        "Indian": 0.07033616095781321,
+        "Latino_Hispanic": 0.04507484644651406,
+        "Middle Eastern": 0.054537145793437936,
+        "Southeast Asian": 0.08574134811759009,
+        "White": 0.053034372702241026
+      },
+      "browInnerUp": {
+        "Black": 0.7901161026954644,
+        "East Asian": 0.8080660128593444,
+        "Indian": 0.6620284461975098,
+        "Latino_Hispanic": 0.5879794800281524,
+        "Middle Eastern": 0.8722226667404175,
+        "Southeast Asian": 0.6479225826263428,
+        "White": 0.6793334615230563
+      },
+      "browDownLeft": {
+        "Black": 0.6604794263839718,
+        "East Asian": 0.42420488834381104,
+        "Indian": 0.6880629396438599,
+        "Latino_Hispanic": 0.7188533258438109,
+        "Middle Eastern": 0.7642890000343323,
+        "Southeast Asian": 0.4963278520107272,
+        "White": 0.7598559021949769
+      },
+      "browDownRight": {
+        "Black": 0.6134668874740598,
+        "East Asian": 0.4052387201786041,
+        "Indian": 0.6823101913928987,
+        "Latino_Hispanic": 0.7506131219863889,
+        "Middle Eastern": 0.7329317855834961,
+        "Southeast Asian": 0.5137668490409854,
+        "White": 0.7657324981689454
+      },
+      "browOuterUpLeft": {
+        "Black": 0.7817694330215446,
+        "East Asian": 0.7779340004920959,
+        "Indian": 0.6817590141296387,
+        "Latino_Hispanic": 0.7072499191761017,
+        "Middle Eastern": 0.8354486799240113,
+        "Southeast Asian": 0.6572048974037173,
+        "White": 0.7413026821613314
+      },
+      "browOuterUpRight": {
+        "Black": 0.7260599136352537,
+        "East Asian": 0.6411004281044006,
+        "Indian": 0.6265248048305513,
+        "Latino_Hispanic": 0.598823490142822,
+        "Middle Eastern": 0.6884370231628418,
+        "Southeast Asian": 0.48657437264919307,
+        "White": 0.7377579081058504
+      },
+      "eyeBlinkLeft": {
+        "Black": 0.6786826801300047,
+        "East Asian": 0.6796700572967529,
+        "Indian": 0.4426454156637191,
+        "Latino_Hispanic": 0.555979390144348,
+        "Middle Eastern": 0.6951518392562867,
+        "Southeast Asian": 0.6416802346706391,
+        "White": 0.6250863242149357
+      },
+      "eyeBlinkRight": {
+        "Black": 0.6233926963806149,
+        "East Asian": 0.559752825498581,
+        "Indian": 0.43861938774585735,
+        "Latino_Hispanic": 0.5434742522239683,
+        "Middle Eastern": 0.6362344026565552,
+        "Southeast Asian": 0.6403506422042847,
+        "White": 0.5904908430576324
+      },
+      "eyeSquintLeft": {
+        "Black": 0.7043353843688964,
+        "East Asian": 0.7963939416408539,
+        "Indian": 0.7098687446117402,
+        "Latino_Hispanic": 0.7592712116241455,
+        "Middle Eastern": 0.8298242378234864,
+        "Southeast Asian": 0.7748609900474548,
+        "White": 0.8157433378696443
+      },
+      "eyeSquintRight": {
+        "Black": 0.639951739311218,
+        "East Asian": 0.750414080619812,
+        "Indian": 0.6644867408275605,
+        "Latino_Hispanic": 0.6952076089382171,
+        "Middle Eastern": 0.7276787424087524,
+        "Southeast Asian": 0.7133452522754672,
+        "White": 0.7085112619400025
+      }
+    },
+    "messages": {
+      "jawOpen": "Please close your mouth",
+      "mouthSmileLeft": "Please relax your mouth",
+      "mouthSmileRight": "Please relax your mouth",
+      "mouthPucker": "Please relax your lips",
+      "mouthPressLeft": "Please relax your lips",
+      "mouthPressRight": "Please relax your lips",
+      "mouthFunnel": "Please relax your lips",
+      "browInnerUp": "Please relax your eyebrows",
+      "browDownLeft": "Please relax your eyebrows",
+      "browDownRight": "Please relax your eyebrows",
+      "browOuterUpLeft": "Please relax your eyebrows",
+      "browOuterUpRight": "Please relax your eyebrows",
+      "eyeBlinkLeft": "Please keep your eyes open",
+      "eyeBlinkRight": "Please keep your eyes open",
+      "eyeSquintLeft": "Please relax your eyes",
+      "eyeSquintRight": "Please relax your eyes"
+    }
+  },
+  "provenance": {
+    "source": "data/interim/diagnose_gates.csv",
+    "n_extracted": 2367,
+    "n_after_pose": 1668,
+    "global_spread_pts": 18.0,
+    "region_spread_pts": 6.34
+  }
+}
