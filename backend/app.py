@@ -44,7 +44,12 @@ def create_app() -> Flask:
         try:
             result: Dict[str, Any] = analyze_image_bytes(image_bytes=image_bytes)
         except AnalyzeError as e:
-            return jsonify({"error": e.code, "details": e.details}), e.http_status
+            body: Dict[str, Any] = {"error": e.code, "details": e.details}
+            # Specific, actionable text (e.g. "Please close your mouth"); the frontend
+            # prefers it over the generic per-code message.
+            if e.hint:
+                body["hint"] = e.hint
+            return jsonify(body), e.http_status
         except Exception as e:
             return jsonify({"error": "UNKNOWN_ERROR", "details": str(e)}), 500
 

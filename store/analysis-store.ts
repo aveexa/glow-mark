@@ -9,7 +9,7 @@ interface AnalysisStore extends AnalysisState {
   setAnalysisStatus: (status: AnalysisState['analysisStatus']) => void;
   setProgressStep: (step: ProcessingStep | null) => void;
   setResult: (result: AnalysisResult | null) => void;
-  setError: (error: ErrorCode | null) => void;
+  setError: (error: ErrorCode | null, hint?: string | null) => void;
   clearAll: () => void;
 }
 
@@ -20,6 +20,7 @@ export const useAnalysisStore = create<AnalysisStore>((set) => ({
   progressStep: null,
   result: null,
   error: null,
+  errorHint: null,
 
   setFile: (file) => set({ selectedFile: file }),
   
@@ -37,9 +38,9 @@ export const useAnalysisStore = create<AnalysisStore>((set) => ({
 
   setProgressStep: (step) => set({ progressStep: step }),
 
-  setResult: (result) => set({ result, error: null }),
+  setResult: (result) => set({ result, error: null, errorHint: null }),
 
-  setError: (error) => set({ error, analysisStatus: 'error' }),
+  setError: (error, hint = null) => set({ error, errorHint: hint, analysisStatus: 'error' }),
 
   clearAll: () => {
     set((state) => {
@@ -54,6 +55,7 @@ export const useAnalysisStore = create<AnalysisStore>((set) => ({
         progressStep: null,
         result: null,
         error: null,
+        errorHint: null,
       };
     });
   },

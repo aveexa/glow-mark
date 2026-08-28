@@ -1,14 +1,16 @@
 """Analyze orchestrator: image bytes → beauty score, feature labels, UI metrics, suggestions.
 
 Pipeline stages (see analyze_image_bytes):
-  1. Decode image
-  2. MediaPipe FaceLandmarker (pass 1) + optional square face normalize (pass 2 remesh)
-  3. Pose gate (Euler decomposition of the pass-2 transformation matrix)
-  4. Beauty MLP (canonicalized 68 landmarks) + display calibration
-  5. Geometry features → feature MLP (low/ok/high per feature)
-  6. UI metrics from feature z-scores (display only)
-  7. Suggestion ranker (percentile one-hots; fail-soft)
-  8. Assemble JSON payload for /analyze
+  1. Decode + MediaPipe FaceLandmarker (pass 1), square face normalize (pass 2 remesh)
+  2. Realness gate  — CLIP zero-shot, rejects drawings / renders / statues / animals
+  3. Pose gate      — Euler decomposition of the pass-2 transformation matrix
+  4. Region detection (see region.py) — must precede neutrality
+  5. Neutrality gate — blendshapes vs region-weighted thresholds
+  6. Beauty MLP (canonicalized 68 landmarks) + display calibration
+  7. Geometry features → feature MLP (low/ok/high per feature)
+  8. UI metrics, suggestion ranker (fail-soft), JSON payload for /analyze
+
+Gates 2, 3 and 5 read every threshold from data/interim/gate_config.json via gates.py.
 """
 
 from __future__ import annotations
@@ -16,7 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, Dict, List, NamedTuple, Tuple
 
 import cv2
 import mediapipe as mp
@@ -25,10 +27,16 @@ import torch
 import torch.nn as nn
 
 from face_normalize import DEFAULT_OUTPUT_SIZE, square_face_crop
+from gates import (
+    NEUTRALITY_MODE_GLOBAL,
+    autocorrect_roll,
+    check_neutrality,
+    check_pose,
+    check_realness,
+    neutrality_mode,
+)
 from geometry import (
     FEATURE_CONTRACT_VERSION,
-    assert_frontal,
-    estimate_pose,
     extract_geometry_features,
     GeometryError,
 )
@@ -46,6 +54,9 @@ class AnalyzeError(Exception):
     code: str
     http_status: int = 400
     details: str | None = None
+    # Actionable, user-facing text when the generic message is not specific enough
+    # (e.g. EXPRESSION_NOT_NEUTRAL -> "Please close your mouth").
+    hint: str | None = None
 
 
 # A commonly-used sparse 68-point subset from MediaPipe Face Mesh (468) for
@@ -274,6 +285,26 @@ def _detect_face(img_bgr: np.ndarray) -> FaceDetection:
     return FaceDetection(landmarks=norm, blendshapes=blendshapes, matrix=matrix)
 
 
+def _detect_region(img_bgr: np.ndarray) -> Tuple[Dict[str, float] | None, str]:
+    """Helper: region mixture weights for the neutrality gate, or None to use global cuts.
+
+    Fail-soft by design — an unavailable or erroring region model degrades to the
+    global thresholds and the request continues.
+    """
+    if neutrality_mode() == NEUTRALITY_MODE_GLOBAL:
+        return None, "Region: skipped (NEUTRALITY_MODE=global)"
+    try:
+        from region import predict_region_weights
+    except Exception as e:  # noqa: BLE001 — region is optional, global cuts still work
+        return None, f"Region: unavailable ({e}); using global thresholds"
+    try:
+        weights = predict_region_weights(img_bgr)
+    except Exception as e:  # noqa: BLE001
+        return None, f"Region: failed ({e}); using global thresholds"
+    top = max(weights, key=weights.__getitem__)
+    return weights, f"Region: mixture (top {top} {weights[top]:.2f})"
+
+
 # SCUT-FBP5500 / beauty checkpoint training canvas (square).
 _BEAUTY_CANVAS_SIZE = 350.0
 
@@ -314,7 +345,7 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     img = _decode_image(image_bytes)
     h, w = img.shape[:2]
 
-    # Pass 1: landmarks on original (also used for fail-soft crop bbox).
+    # 1. Pass 1: landmarks on original (also used for fail-soft crop bbox).
     det_orig = _detect_face(img)
 
     normalize_note = "Face normalize: skipped (using original)"
@@ -336,14 +367,55 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
         transform = None
         normalize_note = "Face normalize: skipped (error, using original)"
 
+    # 2. Realness gate — runs on the upload, before any region inference happens,
+    #    so non-photographic input never reaches a population model.
+    is_real, p_photo = check_realness(img)
+    if not is_real:
+        raise AnalyzeError(
+            code="NOT_A_REAL_FACE",
+            http_status=400,
+            details=f"CLIP p(photo of a person)={p_photo:.3f} below the configured floor.",
+        )
+
+    # 3. Pose gate. Roll inside the limit is corrected by rotating the crop rather
+    #    than rejected; the overlay keeps the pre-rotation landmarks.
+    pose_ok, pose = check_pose(det.matrix)
+    if not pose_ok:
+        raise AnalyzeError(
+            code="FACE_TOO_ANGLED_OR_SMALL",
+            http_status=400,
+            details=(
+                f"Pose out of frontal band: yaw={pose['yaw_deg']:.1f}, "
+                f"pitch={pose['pitch_deg']:.1f}, roll={pose['roll_deg']:.1f}"
+            ),
+        )
+
+    overlay_det = det
+    roll_note = "Roll autocorrect: not needed"
+    roll_correction = float(pose["roll_correction_deg"])
+    if roll_correction:
+        try:
+            upright = autocorrect_roll(img_for_score, roll_correction)
+            det = _detect_face(upright)
+            img_for_score = upright
+            roll_note = f"Roll autocorrect: rotated {-roll_correction:.1f} deg"
+        except Exception:  # noqa: BLE001 — an uncorrected face still scores
+            roll_note = f"Roll autocorrect: skipped (redetect failed, roll={roll_correction:.1f})"
+
     norm468 = det.landmarks[:468]
 
-    # Pose gate (feature contract v1) before any scoring.
-    try:
-        pose = estimate_pose(det.matrix)
-        assert_frontal(pose)
-    except GeometryError as e:
-        raise AnalyzeError(code=e.code, http_status=400, details=e.details) from e
+    # 4. Region detection, then 5. neutrality gate — region weights pick the
+    #    per-population thresholds, so detection has to come first.
+    region_weights, region_note = _detect_region(img_for_score)
+
+    neutral, neutrality_hint = check_neutrality(det.blendshapes, region_weights)
+    if not neutral:
+        raise AnalyzeError(
+            code="EXPRESSION_NOT_NEUTRAL",
+            http_status=400,
+            details="Facial expression is outside the neutral band.",
+            hint=neutrality_hint,
+        )
 
     # Beauty score (canonicalized landmarks; independent of upload resolution).
     beauty_x = _beauty_features_from_68(
@@ -400,10 +472,11 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     ui = ui_metrics_from_z(xn, feat_cols)
 
     # Overlay landmarks in original-image normalized space.
+    overlay468 = overlay_det.landmarks[:468]
     if transform is not None:
-        overlay_norm = transform.remap_landmarks(norm468)
+        overlay_norm = transform.remap_landmarks(overlay468)
     else:
-        overlay_norm = norm468
+        overlay_norm = overlay468
     landmarks = [{"x": float(pt[0]), "y": float(pt[1]), "z": float(pt[2])} for pt in overlay_norm]
 
     # Catalog suggestions from ranker when checkpoint is present (Phase 10).
@@ -430,6 +503,10 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
         calibration_note(),
         f"Feature contract: {FEATURE_CONTRACT_VERSION}",
         f"Pose: yaw={pose['yaw_deg']:.1f}, pitch={pose['pitch_deg']:.1f}, roll={pose['roll_deg']:.1f}",
+        roll_note,
+        f"Realness: p(photo of a person)={p_photo:.3f}",
+        region_note,
+        "Neutrality: passed",
         suggestion_note,
     ]
 

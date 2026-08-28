@@ -5,6 +5,9 @@
     "roll_max_deg": 25.0,
     "roll_autocorrect": true
   },
+  "realness": {
+    "min_p_photo": 0.6
+  },
   "neutrality": {
     "percentiles": {
       "jawOpen": 0.96,

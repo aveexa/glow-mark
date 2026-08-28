@@ -73,8 +73,11 @@ export interface BackendAnalyzeResponse {
 }
 
 export interface BackendAnalyzeErrorResponse {
-  error: string;
+  error: ErrorCode | string;
   details?: string;
+  /** Specific, actionable text from the backend gates, e.g. "Please close your mouth".
+   *  Preferred over the generic per-code message when present. */
+  hint?: string;
 }
 
 export type BackendAnalyzeApiResponse = BackendAnalyzeResponse | BackendAnalyzeErrorResponse;
@@ -86,4 +89,6 @@ export interface AnalysisState {
   progressStep: ProcessingStep | null;
   result: AnalysisResult | null;
   error: ErrorCode | null;
+  /** Backend hint attached to the current error, when it sent one. */
+  errorHint: string | null;
 }

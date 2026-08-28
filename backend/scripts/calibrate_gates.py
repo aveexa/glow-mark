@@ -53,6 +53,9 @@ PCTL["jawOpen"] = 0.96
 PCTL["mouthSmileLeft"] = 0.97
 PCTL["mouthSmileRight"] = 0.97
 
+# CLIP zero-shot cut for the realness gate (softmax mass on the two human prompts).
+REALNESS_MIN_P_PHOTO = 0.60
+
 
 def rejected_mask(df, thr):
     """thr: dict signal -> scalar, or dict signal -> Series aligned to df.index."""
@@ -153,6 +156,9 @@ def main():
     cfg = {
         "pose": {"yaw_max_deg": yaw_lim, "pitch_max_deg": pitch_lim,
                  "roll_max_deg": 25.0, "roll_autocorrect": True},
+        # Realness is not calibrated from this dataset (every FairFace image is a
+        # real photograph); carried here so re-running does not drop the key.
+        "realness": {"min_p_photo": REALNESS_MIN_P_PHOTO},
         "neutrality": {
             "percentiles": PCTL,
             "global": glob,

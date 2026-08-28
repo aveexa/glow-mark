@@ -41,6 +41,7 @@ function DashboardContent() {
         progressStep,
         result,
         error,
+        errorHint,
         setFile,
         setPreviewUrl,
         setAnalysisStatus,
@@ -165,16 +166,24 @@ function DashboardContent() {
             if (!resp.ok) {
                 const code = 'error' in data ? (data.error as ErrorCode | undefined) : undefined
                 const mapped = (code && Object.values(ERROR_CODES).includes(code)) ? code : ERROR_CODES.UNKNOWN_ERROR
-                setError(mapped)
+                // Gate hints ("Please close your mouth") are more useful than the generic copy.
+                const hint = 'hint' in data ? (data.hint as string | undefined) : undefined
+                setError(mapped, hint ?? null)
                 setAnalysisStatus('error')
                 toast({
                     title: 'Analysis Failed',
-                    description: mapped === ERROR_CODES.NO_FACE_DETECTED
+                    description: hint
+                        ? hint
+                        : mapped === ERROR_CODES.NO_FACE_DETECTED
                         ? 'No face detected. Please upload a clear front-facing photo.'
                         : mapped === ERROR_CODES.MULTIPLE_FACES_DETECTED
                         ? 'Multiple faces detected. Please upload an image with a single face.'
                         : mapped === ERROR_CODES.FILE_TOO_LARGE
                         ? 'File too large. Please upload an image under 5MB.'
+                        : mapped === ERROR_CODES.NOT_A_REAL_FACE
+                        ? 'This does not look like a photo of a person. Please upload a real photograph.'
+                        : mapped === ERROR_CODES.EXPRESSION_NOT_NEUTRAL
+                        ? 'Please use a neutral expression, with your face relaxed and mouth closed.'
                         : 'Could not analyze the image. Please try again.',
                     variant: 'destructive',
                 })
@@ -316,7 +325,7 @@ function DashboardContent() {
             return (
                 <div className="min-h-[calc(100vh-6rem)] bg-background flex items-center justify-center p-4">
                     <div className="w-full max-w-2xl">
-                        <ErrorState errorCode={error} onRetry={handleRetry} onCancel={handleCancel} />
+                        <ErrorState errorCode={error} hint={errorHint} onRetry={handleRetry} onCancel={handleCancel} />
                     </div>
                 </div>
             )

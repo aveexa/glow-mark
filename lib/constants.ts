@@ -18,6 +18,8 @@ export const ERROR_CODES = {
   NO_FACE_DETECTED: 'NO_FACE_DETECTED',
   MULTIPLE_FACES_DETECTED: 'MULTIPLE_FACES_DETECTED',
   FACE_TOO_ANGLED_OR_SMALL: 'FACE_TOO_ANGLED_OR_SMALL',
+  NOT_A_REAL_FACE: 'NOT_A_REAL_FACE',
+  EXPRESSION_NOT_NEUTRAL: 'EXPRESSION_NOT_NEUTRAL',
   TIMEOUT: 'TIMEOUT',
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 } as const;
@@ -31,6 +33,10 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   [ERROR_CODES.NO_FACE_DETECTED]: 'No face detected in the image. Please upload a clear front-facing photo.',
   [ERROR_CODES.MULTIPLE_FACES_DETECTED]: 'Multiple faces detected. Please upload an image with a single face.',
   [ERROR_CODES.FACE_TOO_ANGLED_OR_SMALL]: 'Face is too angled or too small. Please upload a clear front-facing photo.',
+  [ERROR_CODES.NOT_A_REAL_FACE]:
+    'This does not look like a photo of a person. Please upload a real photograph.',
+  [ERROR_CODES.EXPRESSION_NOT_NEUTRAL]:
+    'Please use a neutral expression, with your face relaxed and mouth closed.',
   [ERROR_CODES.TIMEOUT]: 'Processing timed out. Please try again.',
   [ERROR_CODES.UNKNOWN_ERROR]: 'An unexpected error occurred. Please try again.',
 };
