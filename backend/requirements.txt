@@ -9,6 +9,8 @@ pyarrow>=15.0.0
 torch>=2.0.0
 # Realness gate (CLIP ViT-B/32 zero-shot)
 open_clip_torch>=2.24.0
+# Region detection (FairFace ResNet-34)
+torchvision>=0.15.0
 # Bakeoff extras (notebook + classical ML + plots)
 jupyter>=1.0.0
 matplotlib>=3.8.0

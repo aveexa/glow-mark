@@ -120,13 +120,15 @@ def check_pose(matrix: np.ndarray) -> Tuple[bool, Dict[str, float]]:
     limits = load_gate_config()["pose"]
     yaw, pitch, roll = euler_from_matrix(matrix)
 
+    # Roll beyond the limit fails whether or not autocorrect is on — past that
+    # angle the rotation would be recovering a face the detector barely resolved.
     within_roll = abs(roll) <= float(limits["roll_max_deg"])
     autocorrect = bool(limits["roll_autocorrect"]) and within_roll
 
     passed = (
         abs(yaw) <= float(limits["yaw_max_deg"])
         and abs(pitch) <= float(limits["pitch_max_deg"])
-        and (autocorrect or within_roll)
+        and within_roll
     )
     pose = {
         "yaw_deg": yaw,

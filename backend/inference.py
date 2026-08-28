@@ -6,15 +6,18 @@ Pipeline stages (see analyze_image_bytes):
   3. Pose gate      — Euler decomposition of the pass-2 transformation matrix
   4. Region detection (see region.py) — must precede neutrality
   5. Neutrality gate — blendshapes vs region-weighted thresholds
-  6. Beauty MLP (canonicalized 68 landmarks) + display calibration
-  7. Geometry features → feature MLP (low/ok/high per feature)
+  6. Beauty MLP (canonicalized 68 landmarks), region-normalized, then calibrated
+  7. Geometry features → low/ok/high from region p20/p80 cutoffs (no Feature MLP)
   8. UI metrics, suggestion ranker (fail-soft), JSON payload for /analyze
 
 Gates 2, 3 and 5 read every threshold from data/interim/gate_config.json via gates.py.
+Stages 6–8 read population norms from data/processed/region_reference_stats.csv via
+region_stats.py, and fall back to the pre-region behaviour when it is absent.
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -28,7 +31,7 @@ import torch.nn as nn
 
 from face_normalize import DEFAULT_OUTPUT_SIZE, square_face_crop
 from gates import (
-    NEUTRALITY_MODE_GLOBAL,
+    NEUTRALITY_MODE_REGION,
     autocorrect_roll,
     check_neutrality,
     check_pose,
@@ -36,13 +39,15 @@ from gates import (
     neutrality_mode,
 )
 from geometry import (
+    FEATURE_COLS,
     FEATURE_CONTRACT_VERSION,
     extract_geometry_features,
     GeometryError,
 )
+from region_stats import beauty_stats, mixture_stats
 from score_calibrate import calibrate_beauty_score, calibration_note
-from suggestion_serve import predict_suggestions
-from ui_metrics import ui_metrics_from_z
+from suggestion_serve import classes_from_thresholds, load_threshold_rules, predict_suggestions
+from ui_metrics import ui_metrics_from_features
 
 _MODELS_DIR = Path(__file__).resolve().parent / "models"
 
@@ -155,27 +160,16 @@ def _mlp_beauty(in_dim: int) -> nn.Module:
     )
 
 
-def _mlp_feature(in_dim: int, out_dim: int) -> nn.Module:
-    """Helper: feature MLP topology matching checkpoint keys (0.weight, 2.weight, 4.weight...)."""
-    return nn.Sequential(
-        nn.Linear(in_dim, 256),
-        nn.ReLU(),
-        nn.Linear(256, 256),
-        nn.ReLU(),
-        nn.Linear(256, out_dim),
-    )
-
-
 @lru_cache(maxsize=1)
 def _load_models():
-    """Helper: lazy-load beauty + feature checkpoints with μ/σ (cached once per process)."""
+    """Helper: lazy-load the beauty checkpoint with μ/σ (cached once per process).
+
+    feature_geometry_model.pt is deliberately not loaded. It approximated a
+    percentile rule that the region-conditioned p20/p80 cutoffs now compute
+    exactly; the checkpoint stays on disk but is off the serve path.
+    """
     beauty_ckpt = torch.load(
         _MODELS_DIR / "beauty_landmarks_best.pt",
-        map_location="cpu",
-        weights_only=False,
-    )
-    feature_ckpt = torch.load(
-        _MODELS_DIR / "feature_geometry_model.pt",
         map_location="cpu",
         weights_only=False,
     )
@@ -191,18 +185,6 @@ def _load_models():
     beauty_ref_span = float(np.max(mu68.max(axis=0) - mu68.min(axis=0)))
     beauty_ref_center = mu68.mean(axis=0).astype(np.float32)
 
-    feature_feat_cols: List[str] = list(feature_ckpt["feat_cols"])
-    feature_label_cols: List[str] = list(feature_ckpt["label_cols"])
-    feature_in_dim = len(feature_feat_cols)
-    feature_mu = np.array(feature_ckpt["mu"], dtype=np.float32).reshape(1, feature_in_dim)
-    feature_sd = np.array(feature_ckpt["sd"], dtype=np.float32).reshape(1, feature_in_dim)
-
-    # Output is 72 = 24 labels * 3 classes (low / ok / high)
-    feature_out_dim = int(np.array(list(feature_ckpt["state"].values())[-2]).shape[0])
-    feature_model = _mlp_feature(feature_in_dim, feature_out_dim)
-    feature_model.load_state_dict(feature_ckpt["state"])
-    feature_model.eval()
-
     return {
         "beauty": {
             "model": beauty_model,
@@ -210,13 +192,6 @@ def _load_models():
             "sd": beauty_sd,
             "ref_span": beauty_ref_span,
             "ref_center": beauty_ref_center,
-        },
-        "feature": {
-            "model": feature_model,
-            "mu": feature_mu,
-            "sd": feature_sd,
-            "feat_cols": feature_feat_cols,
-            "label_cols": feature_label_cols,
         },
     }
 
@@ -285,24 +260,77 @@ def _detect_face(img_bgr: np.ndarray) -> FaceDetection:
     return FaceDetection(landmarks=norm, blendshapes=blendshapes, matrix=matrix)
 
 
-def _detect_region(img_bgr: np.ndarray) -> Tuple[Dict[str, float] | None, str]:
-    """Helper: region mixture weights for the neutrality gate, or None to use global cuts.
+@lru_cache(maxsize=1)
+def _threshold_rules():
+    """Helper: static p20/p80 rules CSV, cached — only chin_length_ratio still needs it."""
+    return load_threshold_rules()
 
-    Fail-soft by design — an unavailable or erroring region model degrades to the
-    global thresholds and the request continues.
+
+def _class_confidence(
+    value: float,
+    cls: str,
+    stats: Dict[str, float] | None,
+) -> float:
+    """How strongly a low/ok/high call holds, as a percentile under the region's norm.
+
+    The class itself is now an exact p20/p80 rule, so this reports position rather
+    than model certainty: a value at the 95th percentile of its region reports 0.95
+    for "high", and an "ok" value reports how centrally it sits (1.0 at the median).
+    Without region statistics there is nothing to be confident about, so 0.5.
     """
-    if neutrality_mode() == NEUTRALITY_MODE_GLOBAL:
-        return None, "Region: skipped (NEUTRALITY_MODE=global)"
+    if not stats or stats["sigma"] <= 0.0:
+        return 0.5
+    z = (float(value) - stats["mu"]) / stats["sigma"]
+    percentile = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+    if cls == "high":
+        return percentile
+    if cls == "low":
+        return 1.0 - percentile
+    return 1.0 - 2.0 * abs(percentile - 0.5)
+
+
+def _region_normalize_beauty(
+    beauty_raw: float,
+    region_weights: Dict[str, float] | None,
+) -> Tuple[float, str]:
+    """Re-express the raw beauty score against the region's own distribution.
+
+    Maps the raw score onto the global arm's scale — same z, global mean and spread —
+    so the existing display calibration stays valid while the score becomes relative
+    to the user's population rather than to the checkpoint's training mix.
+    Returns the (possibly unchanged) raw score and a note for the API payload.
+    """
+    region = beauty_stats(region_weights)
+    reference = beauty_stats(None)
+    if not region or not reference or region["sigma"] <= 0.0:
+        return beauty_raw, "Beauty: global calibration (no region reference statistics)"
+    z = (beauty_raw - region["mu"]) / region["sigma"]
+    return (
+        reference["mu"] + z * reference["sigma"],
+        f"Beauty: region-normalized (z={z:+.2f} vs region mu={region['mu']:.2f})",
+    )
+
+
+def _detect_region(img_bgr: np.ndarray) -> Tuple[Dict[str, float] | None, str]:
+    """Helper: region mixture weights, or None to fall back to the global arm.
+
+    Runs regardless of NEUTRALITY_MODE — that variable scopes only the neutrality
+    thresholds, while the reference norms behind the classes, gauges and beauty
+    score need the mixture either way. Fail-soft by design: an unavailable or
+    erroring region model degrades to the global arm and the request continues.
+    """
     try:
         from region import predict_region_weights
-    except Exception as e:  # noqa: BLE001 — region is optional, global cuts still work
-        return None, f"Region: unavailable ({e}); using global thresholds"
+    except Exception as e:  # noqa: BLE001 — region is optional, the global arm still works
+        return None, f"Region: unavailable ({e}); using global norms"
     try:
         weights = predict_region_weights(img_bgr)
     except Exception as e:  # noqa: BLE001
-        return None, f"Region: failed ({e}); using global thresholds"
+        return None, f"Region: failed ({e}); using global norms"
     top = max(weights, key=weights.__getitem__)
-    return weights, f"Region: mixture (top {top} {weights[top]:.2f})"
+    mode = neutrality_mode()
+    scope = "norms + neutrality" if mode == NEUTRALITY_MODE_REGION else "norms only (NEUTRALITY_MODE=global)"
+    return weights, f"Region: mixture (top {top} {weights[top]:.2f}); applied to {scope}"
 
 
 # SCUT-FBP5500 / beauty checkpoint training canvas (square).
@@ -338,8 +366,9 @@ def _beauty_features_from_68(
 def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     """Run the full analyze pipeline and return the /analyze JSON payload.
 
-    Stages: decode → normalize (fail-soft) → pose gate → beauty + calibrate →
-    geometry/feature → UI metrics → suggestions (fail-soft) → response dict.
+    Stages: decode → normalize (fail-soft) → realness / pose / neutrality gates →
+    region mixture → beauty (region-normalized, calibrated) → geometry classes from
+    region cutoffs → UI metrics → suggestions (fail-soft) → response dict.
     """
     models = _load_models()
     img = _decode_image(image_bytes)
@@ -417,7 +446,9 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
             hint=neutrality_hint,
         )
 
-    # Beauty score (canonicalized landmarks; independent of upload resolution).
+    # 6. Beauty score (canonicalized landmarks; independent of upload resolution),
+    #    re-expressed against the region's own raw-score distribution before the
+    #    display calibration, so the number means "relative to this population".
     beauty_x = _beauty_features_from_68(
         norm468,
         models["beauty"]["ref_span"],
@@ -429,47 +460,32 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     with torch.no_grad():
         beauty_raw = float(models["beauty"]["model"](torch.from_numpy(beauty_xn)).reshape(-1)[0].item())
 
-    # Geometry features for feature model (shared contract module).
+    beauty_for_display, beauty_note = _region_normalize_beauty(beauty_raw, region_weights)
+
+    # 7. Geometry features → low/ok/high straight from the region p20/p80 cutoffs.
     try:
         feats = extract_geometry_features(norm468)
     except GeometryError as e:
         raise AnalyzeError(code=e.code, http_status=400, details=e.details) from e
-    feat_cols: List[str] = models["feature"]["feat_cols"]
-    x = np.array([[float(feats[c]) for c in feat_cols]], dtype=np.float32)  # (1,24)
-    mu = models["feature"]["mu"]
-    sd = models["feature"]["sd"]
-    xn = (x - mu) / (sd + 1e-6)
 
-    with torch.no_grad():
-        logits = models["feature"]["model"](torch.from_numpy(xn)).cpu().numpy().reshape(-1)
-
-    label_cols: List[str] = models["feature"]["label_cols"]
-    if logits.shape[0] % len(label_cols) != 0:
-        raise AnalyzeError(
-            code="UNKNOWN_ERROR",
-            http_status=500,
-            details=f"Feature output dim {logits.shape[0]} not compatible with {len(label_cols)} labels.",
-        )
-
-    classes_per = logits.shape[0] // len(label_cols)
-    scores = logits.reshape(len(label_cols), classes_per)
-    probs = np.exp(scores - scores.max(axis=1, keepdims=True))
-    probs = probs / probs.sum(axis=1, keepdims=True)
-
-    class_names = ["low", "ok", "high"] if classes_per == 3 else [f"class_{i}" for i in range(classes_per)]
+    feat_cols: List[str] = list(FEATURE_COLS)
+    region_norms = mixture_stats(region_weights) or {}
+    classes = classes_from_thresholds(feats, _threshold_rules(), region_weights)
 
     feature_items = []
     recommendations = []
-    for i, name in enumerate(label_cols):
-        ci = int(np.argmax(probs[i]))
-        conf = float(probs[i][ci])
-        cls = class_names[ci]
-        feature_items.append({"label": name, "class": cls, "confidence": round(conf, 4)})
+    for name in feat_cols:
+        cls = classes[name]
+        feature_items.append({
+            "label": name,
+            "class": cls,
+            "confidence": round(_class_confidence(feats[name], cls, region_norms.get(name)), 4),
+        })
         if cls != "ok":
             recommendations.append(f"{name}: {cls}")
 
-    # UI metrics only (soft multi-feature); does not affect model inputs.
-    ui = ui_metrics_from_z(xn, feat_cols)
+    # 8. UI metrics only (soft multi-feature); does not affect any model input.
+    ui = ui_metrics_from_features(feats, feat_cols, region_weights)
 
     # Overlay landmarks in original-image normalized space.
     overlay468 = overlay_det.landmarks[:468]
@@ -482,7 +498,7 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     # Catalog suggestions from ranker when checkpoint is present (Phase 10).
     # One-hots come from percentile cutoffs inside predict_suggestions — not Feature classes.
     try:
-        suggestions = predict_suggestions(feats, top_k=4)
+        suggestions = predict_suggestions(feats, top_k=4, region_weights=region_weights)
     except Exception as e:  # noqa: BLE001 — never break analyze if ranker fails
         suggestions = []
         suggestion_note = f"Suggestion ranker skipped: {e}"
@@ -494,9 +510,9 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
         )
 
     sh, sw = img_for_score.shape[:2]
-    beauty_score = calibrate_beauty_score(beauty_raw)
+    beauty_score = calibrate_beauty_score(beauty_for_display)
     notes = [
-        "Backend inference: MediaPipe FaceLandmarker (478) -> beauty model -> feature model.",
+        "Backend inference: MediaPipe FaceLandmarker (478) -> beauty model -> region p20/p80 classes.",
         f"Image size: {w}x{h}",
         f"Score frame: {sw}x{sh}",
         normalize_note,
@@ -507,6 +523,7 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
         f"Realness: p(photo of a person)={p_photo:.3f}",
         region_note,
         "Neutrality: passed",
+        beauty_note,
         suggestion_note,
     ]
 
