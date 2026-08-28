@@ -1,5 +1,8 @@
 """Feature contract v1 — pose gate + 24 locked geometry features from MediaPipe 468.
 
+Landmark input is always the first 468 points; the Tasks API appends 10 iris
+points (468–477) that this contract does not use.
+
 Shared by serve (inference) and offline Dataset B/C pipelines. Changing FEATURE_COLS
 or formulas requires a new contract version.
 """
@@ -7,7 +10,7 @@ or formulas requires a new contract version.
 from __future__ import annotations
 
 import math
-from typing import Dict, Mapping, MutableMapping
+from typing import Dict, Mapping, MutableMapping, Tuple
 
 import numpy as np
 
@@ -78,8 +81,12 @@ def _triangle_angle_deg(p: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
     return float(math.degrees(math.acos(cosang)))
 
 
-def estimate_pose(norm468: np.ndarray) -> Dict[str, float]:
-    """Estimate yaw/pitch (degrees) from normalized MediaPipe landmarks (optional z blend)."""
+def estimate_pose_from_landmarks(norm468: np.ndarray) -> Dict[str, float]:
+    """Legacy heuristic yaw/pitch (degrees) from landmarks alone.
+
+    Superseded by ``estimate_pose``, which decomposes the FaceLandmarker
+    transformation matrix. Kept for offline scripts that only have landmarks.
+    """
     if norm468.ndim != 2 or norm468.shape[0] < 468:
         raise GeometryError("FACE_TOO_ANGLED_OR_SMALL", "Expected at least 468 landmarks.")
 
@@ -117,6 +124,31 @@ def estimate_pose(norm468: np.ndarray) -> Dict[str, float]:
         yaw_deg = float(0.85 * yaw_deg + 0.15 * np.clip(z_asym * 180.0, -90.0, 90.0))
 
     return {"yaw_deg": yaw_deg, "pitch_deg": pitch_deg}
+
+
+def euler_from_matrix(matrix: np.ndarray) -> Tuple[float, float, float]:
+    """Yaw/pitch/roll in degrees from the 4x4 facial transformation matrix."""
+    m = np.asarray(matrix, dtype=np.float64)
+    if m.shape != (4, 4):
+        raise GeometryError(
+            "FACE_TOO_ANGLED_OR_SMALL",
+            f"Expected a 4x4 transformation matrix, got shape {m.shape}.",
+        )
+    r = m[:3, :3]
+    sy = math.sqrt(r[0, 0] ** 2 + r[1, 0] ** 2)
+    if sy > 1e-6:
+        pitch = math.atan2(r[2, 1], r[2, 2])
+        yaw = math.atan2(-r[2, 0], sy)
+        roll = math.atan2(r[1, 0], r[0, 0])
+    else:
+        pitch, yaw, roll = math.atan2(-r[1, 2], r[1, 1]), math.atan2(-r[2, 0], sy), 0.0
+    return math.degrees(yaw), math.degrees(pitch), math.degrees(roll)
+
+
+def estimate_pose(matrix: np.ndarray) -> Dict[str, float]:
+    """Head pose (degrees) from the FaceLandmarker 4x4 facial transformation matrix."""
+    yaw, pitch, roll = euler_from_matrix(matrix)
+    return {"yaw_deg": yaw, "pitch_deg": pitch, "roll_deg": roll}
 
 
 def assert_frontal(

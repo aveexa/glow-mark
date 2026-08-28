@@ -35,7 +35,7 @@ from geometry import (  # noqa: E402
     FEATURE_CONTRACT_VERSION,
     GeometryError,
     assert_frontal,
-    estimate_pose,
+    estimate_pose_from_landmarks,
     extract_geometry_features,
 )
 
@@ -134,7 +134,7 @@ def main() -> int:
             if img is None:
                 raise GeometryError("CORRUPT_FILE", "Could not decode image.")
             norm468 = extract_landmarks_468(img, face_mesh)
-            pose = estimate_pose(norm468)
+            pose = estimate_pose_from_landmarks(norm468)
             assert_frontal(pose)
             feats = extract_geometry_features(norm468)
 

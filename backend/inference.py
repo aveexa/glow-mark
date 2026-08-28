@@ -2,8 +2,8 @@
 
 Pipeline stages (see analyze_image_bytes):
   1. Decode image
-  2. MediaPipe FaceMesh (pass 1) + optional square face normalize (pass 2 remesh)
-  3. Pose gate (feature contract v1)
+  2. MediaPipe FaceLandmarker (pass 1) + optional square face normalize (pass 2 remesh)
+  3. Pose gate (Euler decomposition of the pass-2 transformation matrix)
   4. Beauty MLP (canonicalized 68 landmarks) + display calibration
   5. Geometry features → feature MLP (low/ok/high per feature)
   6. UI metrics from feature z-scores (display only)
@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, NamedTuple
 
 import cv2
 import mediapipe as mp
@@ -210,16 +210,25 @@ def _load_models():
     }
 
 
+_TASK_PATH = _MODELS_DIR / "face_landmarker_v2_with_blendshapes.task"
+
+
 @lru_cache(maxsize=1)
-def _mp_face_mesh():
-    """Helper: cached MediaPipe FaceMesh instance for static single-image detection."""
-    return mp.solutions.face_mesh.FaceMesh(
-        static_image_mode=True,
-        max_num_faces=2,
-        refine_landmarks=False,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5,
+def _face_landmarker():
+    """Helper: cached MediaPipe FaceLandmarker (Tasks API) for static single-image detection.
+
+    ``num_faces=2`` is deliberate: it is what lets MULTIPLE_FACES_DETECTED fire
+    instead of the detector silently picking one face.
+    """
+    options = mp.tasks.vision.FaceLandmarkerOptions(
+        base_options=mp.tasks.BaseOptions(model_asset_path=str(_TASK_PATH)),
+        running_mode=mp.tasks.vision.RunningMode.IMAGE,
+        num_faces=2,
+        output_face_blendshapes=True,
+        output_facial_transformation_matrixes=True,
+        min_face_detection_confidence=0.5,
     )
+    return mp.tasks.vision.FaceLandmarker.create_from_options(options)
 
 
 def _decode_image(image_bytes: bytes) -> np.ndarray:
@@ -231,28 +240,38 @@ def _decode_image(image_bytes: bytes) -> np.ndarray:
     return img
 
 
-def _extract_landmarks_468(img_bgr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """Helper: detect exactly one face → (normalized 468×3, pixel 468×2) landmarks."""
-    h, w = img_bgr.shape[:2]
-    rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    results = _mp_face_mesh().process(rgb)
+class FaceDetection(NamedTuple):
+    """One detected face as returned by the Tasks API.
 
-    faces = results.multi_face_landmarks or []
+    ``landmarks`` is (478, 3): indices 0–467 are the canonical mesh topology the
+    feature contract uses, 468–477 are iris points appended by this model.
+    """
+
+    landmarks: np.ndarray  # (478, 3) normalized [0..1] x/y, model-space z
+    blendshapes: Dict[str, float]  # 52 entries keyed by category_name
+    matrix: np.ndarray  # (4, 4) facial transformation matrix
+
+
+def _detect_face(img_bgr: np.ndarray) -> FaceDetection:
+    """Helper: detect exactly one face → landmarks + blendshapes + transformation matrix."""
+    # The Tasks API expects SRGB; handing it BGR degrades results silently.
+    rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    result = _face_landmarker().detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb))
+
+    faces = result.face_landmarks or []
     if len(faces) == 0:
         raise AnalyzeError(code="NO_FACE_DETECTED", http_status=400)
     if len(faces) > 1:
         raise AnalyzeError(code="MULTIPLE_FACES_DETECTED", http_status=400)
 
-    lm = faces[0].landmark
-    if len(lm) < 100:
+    lm = faces[0]
+    if len(lm) < 468:
         raise AnalyzeError(code="FACE_TOO_ANGLED_OR_SMALL", http_status=400)
 
-    # normalized [0..1] and pixel coords
-    norm = np.array([[p.x, p.y, getattr(p, "z", 0.0)] for p in lm], dtype=np.float32)  # (468,3)
-    px = np.empty((len(lm), 2), dtype=np.float32)
-    px[:, 0] = norm[:, 0] * float(w)
-    px[:, 1] = norm[:, 1] * float(h)
-    return norm, px
+    norm = np.array([[p.x, p.y, p.z] for p in lm], dtype=np.float32)  # (478,3)
+    blendshapes = {c.category_name: float(c.score) for c in result.face_blendshapes[0]}
+    matrix = np.array(result.facial_transformation_matrixes[0], dtype=np.float32).reshape(4, 4)
+    return FaceDetection(landmarks=norm, blendshapes=blendshapes, matrix=matrix)
 
 
 # SCUT-FBP5500 / beauty checkpoint training canvas (square).
@@ -296,29 +315,32 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     h, w = img.shape[:2]
 
     # Pass 1: landmarks on original (also used for fail-soft crop bbox).
-    norm_orig, _px468 = _extract_landmarks_468(img)
+    det_orig = _detect_face(img)
 
     normalize_note = "Face normalize: skipped (using original)"
     transform = None
     img_for_score = img
     try:
-        cropped = square_face_crop(img, norm_orig, output_size=DEFAULT_OUTPUT_SIZE)
+        cropped = square_face_crop(img, det_orig.landmarks[:468], output_size=DEFAULT_OUTPUT_SIZE)
         if cropped is not None:
             square_bgr, transform = cropped
             # Pass 2: remesh on square crop for isotropic, stable framing.
-            norm468, _ = _extract_landmarks_468(square_bgr)
+            # Blendshapes, pose matrix and geometry features all come from here.
+            det = _detect_face(square_bgr)
             img_for_score = square_bgr
             normalize_note = f"Face normalize: square {DEFAULT_OUTPUT_SIZE}"
         else:
-            norm468 = norm_orig
-    except Exception:  # noqa: BLE001 — never block analyze on normalize
-        norm468 = norm_orig
+            det = det_orig
+    except Exception:  # noqa: BLE001 — never block analyze on normalize (incl. pass-2 misses)
+        det = det_orig
         transform = None
         normalize_note = "Face normalize: skipped (error, using original)"
 
+    norm468 = det.landmarks[:468]
+
     # Pose gate (feature contract v1) before any scoring.
     try:
-        pose = estimate_pose(norm468)
+        pose = estimate_pose(det.matrix)
         assert_frontal(pose)
     except GeometryError as e:
         raise AnalyzeError(code=e.code, http_status=400, details=e.details) from e
@@ -401,13 +423,13 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     sh, sw = img_for_score.shape[:2]
     beauty_score = calibrate_beauty_score(beauty_raw)
     notes = [
-        "Backend inference: MediaPipe FaceMesh (468) -> beauty model -> feature model.",
+        "Backend inference: MediaPipe FaceLandmarker (478) -> beauty model -> feature model.",
         f"Image size: {w}x{h}",
         f"Score frame: {sw}x{sh}",
         normalize_note,
         calibration_note(),
         f"Feature contract: {FEATURE_CONTRACT_VERSION}",
-        f"Pose: yaw={pose['yaw_deg']:.1f}, pitch={pose['pitch_deg']:.1f}",
+        f"Pose: yaw={pose['yaw_deg']:.1f}, pitch={pose['pitch_deg']:.1f}, roll={pose['roll_deg']:.1f}",
         suggestion_note,
     ]
 
