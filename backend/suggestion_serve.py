@@ -33,6 +33,21 @@ CKPT_FALLBACKS = (
 DEFAULT_RULES = REPO_ROOT / "data" / "processed" / "suggestion_mapping_rules.csv"
 DEFAULT_CATALOG = REPO_ROOT / "data" / "catalogs" / "suggestions.csv"
 
+# Features held back from every user-facing output.
+#
+# chin_length_ratio is computed from the same two landmarks as
+# lowerface_length_ratio — p4 (nose tip) and p152 (chin), over face height — and is
+# numerically identical to it in every row. Surfacing both shows the user the same
+# measurement twice, and because the reference table excludes it the duplicate also
+# carries no region statistics, so it reports the neutral 0.5 confidence sentinel
+# beside features showing 84-95%.
+#
+# It is filtered *after* ranking, never before:
+#   - geometry.py still computes all 24; the feature contract stays v1.
+#   - the ranker still receives all 24 positions; dropping one would change the
+#     input shape from 96 and require a retrain.
+RESPONSE_EXCLUDED_FEATURES: tuple[str, ...] = ("chin_length_ratio",)
+
 
 def resolve_ranker_checkpoint(ckpt_path: Path | str | None = None) -> Path | None:
     """Pick the first existing ranker .pt (explicit path, else prod then fallbacks)."""
@@ -145,7 +160,16 @@ def predict_suggestions(
 
     catalog = bundle["catalog"]
     out: List[Dict[str, Any]] = []
-    for sid, conf in decode_top_k(logits, bundle["suggestion_ids"], k=top_k):
-        text = catalog.get(sid, {}).get("approved_text", "")
-        out.append({"id": sid, "text": text, "confidence": round(conf, 4)})
+    # Rank over the whole vocabulary, then drop excluded-feature suggestions and take
+    # top_k — truncating first would silently return fewer than k.
+    ranked = decode_top_k(logits, bundle["suggestion_ids"], k=len(bundle["suggestion_ids"]))
+    for sid, conf in ranked:
+        row = catalog.get(sid, {})
+        # An id absent from the catalog keeps its prior behaviour (empty text) —
+        # only a known excluded-feature row is dropped.
+        if row.get("feature", "").strip() in RESPONSE_EXCLUDED_FEATURES:
+            continue
+        out.append({"id": sid, "text": row.get("approved_text", ""), "confidence": round(conf, 4)})
+        if len(out) >= top_k:
+            break
     return out

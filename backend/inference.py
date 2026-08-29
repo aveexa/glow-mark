@@ -46,7 +46,12 @@ from geometry import (
 )
 from region_stats import beauty_stats, mixture_stats
 from score_calibrate import calibrate_beauty_score, calibration_note
-from suggestion_serve import classes_from_thresholds, load_threshold_rules, predict_suggestions
+from suggestion_serve import (
+    RESPONSE_EXCLUDED_FEATURES,
+    classes_from_thresholds,
+    load_threshold_rules,
+    predict_suggestions,
+)
 from ui_metrics import ui_metrics_from_features
 
 _MODELS_DIR = Path(__file__).resolve().parent / "models"
@@ -472,9 +477,13 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     region_norms = mixture_stats(region_weights) or {}
     classes = classes_from_thresholds(feats, _threshold_rules(), region_weights)
 
+    # The contract still carries all 24 features and the ranker still scores all 24;
+    # only what the user sees is filtered. See RESPONSE_EXCLUDED_FEATURES.
+    reported_cols = [c for c in feat_cols if c not in RESPONSE_EXCLUDED_FEATURES]
+
     feature_items = []
     recommendations = []
-    for name in feat_cols:
+    for name in reported_cols:
         cls = classes[name]
         feature_items.append({
             "label": name,
@@ -537,7 +546,7 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
         },
         "landmarks": landmarks,
         "overlayTypeHints": {"points": True, "outline": True, "mesh": False},
-        "ratios": [{"name": k, "value": float(feats[k]), "idealRange": ""} for k in feat_cols],
+        "ratios": [{"name": k, "value": float(feats[k]), "idealRange": ""} for k in reported_cols],
         "recommendations": recommendations,
         "recommendation_items": feature_items,
         "suggestions": suggestions,
