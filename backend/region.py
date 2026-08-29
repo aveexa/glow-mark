@@ -24,8 +24,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-_DEFAULT_MODEL_PATH = _REPO_ROOT / "datasets" / "FairFace" / "res34_fair_align_multi_7_20190809.pt"
+_MODELS_DIR = Path(__file__).resolve().parent / "models"
+# Lives with the other serve checkpoints rather than under datasets/, so serve does
+# not depend on the dataset tree. Like beauty_landmarks_best.pt and the other .pt
+# files it is gitignored (backend/.gitignore: models/*.pt) and supplied out of band.
+_DEFAULT_MODEL_PATH = _MODELS_DIR / "res34_fair_align_multi_7_20190809.pt"
 REGION_MODEL_PATH_ENV = "REGION_MODEL_PATH"
 
 # FairFace's race head order. Getting this wrong silently mismatches every
