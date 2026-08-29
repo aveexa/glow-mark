@@ -1,4 +1,25 @@
-"""Flask HTTP surface for Cloud Run orchestrator (same contract as backend/app.py)."""
+"""Flask HTTP surface for Cloud Run orchestrator (same contract as backend/app.py).
+
+SUPERSEDED — DO NOT DEPLOY. This is the v1 pipeline.
+
+``backend/`` is the maintained serve path. This package is a second, complete copy
+that still builds and runs: its requirements.txt pins ``mediapipe>=0.10.14,<0.10.30``,
+which still has the ``mp.solutions`` API that was removed in 1.0.1, so nothing here
+fails loudly. It will happily serve ``POST /analyze`` with none of the v2 work:
+
+  * no realness gate      — cartoons, renders, statues and animals get scored
+  * no neutrality gate    — expression displaces ~13 of the 24 features
+  * no roll autocorrect   — and pose comes from the landmark heuristic, not the
+                            FaceLandmarker transformation matrix
+  * no region conditioning — one global reference population, fitted on 412 mostly
+                            white faces, which is the thing v2 exists to replace
+  * still calls the Feature MLP over HTTP, which backend/ removed in favour of exact
+    region-conditioned p20/p80 cutoffs
+
+Nothing in the repo routes to it: the frontend calls NEXT_PUBLIC_BACKEND_URL, which
+defaults to backend/app.py on :5001 and is not set anywhere here. See the warning at
+the top of docs/gcp_deploy_three_models.md before acting on that guide.
+"""
 
 from __future__ import annotations
 

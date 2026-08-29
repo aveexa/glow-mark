@@ -1,4 +1,9 @@
-"""Orchestrator analyze: MediaPipe + geometry + HTTP calls to model APIs."""
+"""Orchestrator analyze: MediaPipe + geometry + HTTP calls to model APIs.
+
+SUPERSEDED — v1 pipeline, none of the v2 gates. See the note in app.py.
+The ``mp.solutions`` call below only works because requirements.txt pins an old
+MediaPipe; backend/inference.py is the maintained equivalent.
+"""
 
 from __future__ import annotations
 

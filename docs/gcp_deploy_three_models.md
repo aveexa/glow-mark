@@ -1,5 +1,20 @@
 # Glow-Mark — GCP Three-Model Deployment Guide
 
+> [!WARNING]
+> **SUPERSEDED — this guide deploys the v1 pipeline.**
+>
+> It instructs you to deploy `services/orchestrator/` as production `POST /analyze`
+> and to "point the Next.js app at the orchestrator only". That orchestrator is a
+> second, complete copy of the serve path that was never migrated to v2. It still
+> builds and runs — its `requirements.txt` pins `mediapipe>=0.10.14,<0.10.30`, which
+> still has the removed `mp.solutions` API — so following this guide produces a
+> working service with **none** of the v2 validation gates and **no** region
+> conditioning: no realness check, no neutrality check, no roll autocorrect, and a
+> single global reference population fitted on 412 mostly white faces.
+>
+> `backend/` is the maintained serve path. Do not follow this guide until the
+> orchestrator has been migrated or the guide has been rewritten against `backend/`.
+
 **Audience:** Engineers deploying Glow-Mark ML serve to Google Cloud  
 **Scope:** Put the three production MLPs on GCP as callable prediction APIs, plus an orchestrator that keeps the existing `POST /analyze` contract for Next.js  
 **Platform (locked):** Cloud Storage (artifacts) + Cloud Run (CPU services)  
