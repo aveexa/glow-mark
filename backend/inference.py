@@ -31,12 +31,12 @@ import torch.nn as nn
 
 from face_normalize import DEFAULT_OUTPUT_SIZE, square_face_crop
 from gates import (
-    NEUTRALITY_MODE_REGION,
+    NEUTRALITY_THRESHOLD_MODE_REGION,
     autocorrect_roll,
     check_neutrality,
     check_pose,
     check_realness,
-    neutrality_mode,
+    neutrality_threshold_mode,
 )
 from geometry import (
     FEATURE_COLS,
@@ -319,7 +319,7 @@ def _region_normalize_beauty(
 def _detect_region(img_bgr: np.ndarray) -> Tuple[Dict[str, float] | None, str]:
     """Helper: region mixture weights, or None to fall back to the global arm.
 
-    Runs regardless of NEUTRALITY_MODE — that variable scopes only the neutrality
+    Runs regardless of NEUTRALITY_THRESHOLD_MODE — that variable scopes only the neutrality
     thresholds, while the reference norms behind the classes, gauges and beauty
     score need the mixture either way. Fail-soft by design: an unavailable or
     erroring region model degrades to the global arm and the request continues.
@@ -333,8 +333,11 @@ def _detect_region(img_bgr: np.ndarray) -> Tuple[Dict[str, float] | None, str]:
     except Exception as e:  # noqa: BLE001
         return None, f"Region: failed ({e}); using global norms"
     top = max(weights, key=weights.__getitem__)
-    mode = neutrality_mode()
-    scope = "norms + neutrality" if mode == NEUTRALITY_MODE_REGION else "norms only (NEUTRALITY_MODE=global)"
+    mode = neutrality_threshold_mode()
+    scope = (
+        "norms + neutrality" if mode == NEUTRALITY_THRESHOLD_MODE_REGION
+        else "norms only (NEUTRALITY_THRESHOLD_MODE=global)"
+    )
     return weights, f"Region: mixture (top {top} {weights[top]:.2f}); applied to {scope}"
 
 

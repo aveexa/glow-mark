@@ -25,9 +25,13 @@ from geometry import euler_from_matrix
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 GATE_CONFIG_PATH = _REPO_ROOT / "data" / "interim" / "gate_config.json"
 
-NEUTRALITY_MODE_ENV = "NEUTRALITY_MODE"
-NEUTRALITY_MODE_REGION = "region"
-NEUTRALITY_MODE_GLOBAL = "global"
+# Selects which neutrality thresholds are used, and nothing else. Region detection
+# runs on every request regardless of this value, because the feature norms behind
+# the classes, the UI gauges and the beauty score all need the region mixture. The
+# older name (NEUTRALITY_MODE) read like a switch that turned region handling off.
+NEUTRALITY_THRESHOLD_MODE_ENV = "NEUTRALITY_THRESHOLD_MODE"
+NEUTRALITY_THRESHOLD_MODE_REGION = "region"
+NEUTRALITY_THRESHOLD_MODE_GLOBAL = "global"
 
 # Zero-shot class set for the realness gate. The first group is the "this really is
 # a photo of a person" mass; the rest are the ways v1 got fooled — drawings, renders,
@@ -59,10 +63,14 @@ def load_gate_config() -> Dict[str, Any]:
         return json.load(f)
 
 
-def neutrality_mode() -> str:
-    """``region`` (default) or ``global``, from the NEUTRALITY_MODE env var."""
-    mode = os.environ.get(NEUTRALITY_MODE_ENV, NEUTRALITY_MODE_REGION).strip().lower()
-    return mode if mode in (NEUTRALITY_MODE_REGION, NEUTRALITY_MODE_GLOBAL) else NEUTRALITY_MODE_REGION
+def neutrality_threshold_mode() -> str:
+    """``region`` (default) or ``global``, from the NEUTRALITY_THRESHOLD_MODE env var."""
+    mode = os.environ.get(
+        NEUTRALITY_THRESHOLD_MODE_ENV, NEUTRALITY_THRESHOLD_MODE_REGION
+    ).strip().lower()
+    if mode in (NEUTRALITY_THRESHOLD_MODE_REGION, NEUTRALITY_THRESHOLD_MODE_GLOBAL):
+        return mode
+    return NEUTRALITY_THRESHOLD_MODE_REGION
 
 
 # ---------------------------------------------------------------- realness (2)
@@ -161,13 +169,13 @@ def neutrality_threshold(
 ) -> float:
     """Threshold for one blendshape: the global cut, or the region-weighted blend of them.
 
-    Falls back to the global cut whenever region weights cannot be applied — unknown
+    Falls back to the global cut whenever region weights cannot be applied — global
     mode, no weights, signal absent from the per-region table, or degenerate weights.
     """
     neutrality = load_gate_config()["neutrality"]
     global_threshold = float(neutrality["global"][signal])
 
-    if region_weights is None or neutrality_mode() == NEUTRALITY_MODE_GLOBAL:
+    if region_weights is None or neutrality_threshold_mode() == NEUTRALITY_THRESHOLD_MODE_GLOBAL:
         return global_threshold
 
     per_region = neutrality.get("per_region", {}).get(signal)
