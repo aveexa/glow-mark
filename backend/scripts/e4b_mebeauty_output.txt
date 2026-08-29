@@ -1,0 +1,55 @@
+MEBeauty: 300 rated images
+ethnicity        sex   
+Black            female    22
+                 male      15
+East Asian       female    17
+                 male      10
+Indian           female    18
+                 male      23
+Latino_Hispanic  female    19
+                 male      18
+Middle Eastern   female    12
+                 male      14
+White            female    75
+                 male      57
+
+processing (strict gates)...
+  ...250/300
+
+survived 191/300  (63.7%)
+  rejected: not_real=1, pose=29, expression=52, error=27
+
+Survival per group:
+                 attempted  kept  rate_%
+ethnicity                               
+Black                   37    21    56.8
+East Asian              27    19    70.4
+Indian                  41    11    26.8
+Latino_Hispanic         37    23    62.2
+Middle Eastern          26    15    57.7
+White                  132   102    77.3
+
+WARNING: 5 group(s) under 30 faces — their correlations are not reliable.
+Re-run with --loose to trade gate fidelity for sample size.
+
+==========================================================================
+E4b  Agreement with human ratings, before and after normalisation
+==========================================================================
+                        n  raw_pearson  norm_pearson  raw_spearman  norm_spearman  d_pearson
+ethnicity                                                                                   
+Black              21.000        0.173         0.173         0.264          0.264     -0.000
+East Asian         19.000        0.413         0.413         0.382          0.382      0.000
+Indian             11.000          NaN           NaN           NaN            NaN        NaN
+Latino_Hispanic    23.000       -0.193        -0.193        -0.191         -0.191     -0.000
+Middle Eastern     15.000       -0.009        -0.009        -0.055         -0.055      0.000
+White             102.000        0.064         0.064         0.075          0.075      0.000
+ALL               191.000        0.105         0.074         0.114          0.090     -0.031
+
+How to read this:
+  Correlation measures whether the score RANKS faces the way people do.
+  Region normalisation shifts each group to a common centre, so it
+  cannot change the within-group ranking — per-group correlations
+  should be near identical. The ALL row is the real test: pooling
+  groups, an uncorrected offset drags the overall correlation down.
+
+wrote /home/tr3x/Projects/glow-mark/data/processed/experiments/e4b_mebeauty_correlation.csv and e4b.png

@@ -1,0 +1,140 @@
+loaded 2367 faces, 576 reference rows, 23 features
+
+========================================================================
+E1  Does expression distort the measurements?
+========================================================================
+feature                          r           p
+mouth_width_ratio            0.458   8.77e-123  <-- strong
+philtrum_ratio              -0.355    2.16e-71  <-- strong
+upper_lip_ratio             -0.337    4.17e-64  <-- strong
+lip_thickness_ratio          0.325    2.10e-59  <-- strong
+eye_openness_ratio          -0.308    2.47e-53  <-- strong
+nose_width_ratio             0.157    1.72e-14
+symmetry_error              -0.142    3.43e-12
+nose_tip_deviation_ratio    -0.137    2.04e-11
+brow_height_ratio           -0.112    5.22e-08
+midface_length_ratio         0.108    1.31e-07
+lowerface_length_ratio      -0.091    1.02e-05
+nose_length_ratio            0.072    4.31e-04
+face_aspect_ratio            0.064    1.85e-03
+cheekbone_width_ratio        0.044    3.23e-02
+jaw_angle_sharpness         -0.043    3.54e-02
+jaw_width_ratio             -0.028    1.78e-01
+chin_width_ratio             0.024    2.39e-01
+mouth_corner_tilt_deg        0.021    3.16e-01
+eye_spacing_ratio           -0.020    3.20e-01
+eye_size_ratio              -0.018    3.92e-01
+brow_tilt_deg               -0.012    5.51e-01
+eye_tilt_deg                -0.005    7.98e-01
+lower_cheek_ratio           -0.001    9.68e-01
+
+5 of 23 features correlate |r|>0.20 with expression energy.
+
+========================================================================
+E2  Do the measurements vary by region?
+========================================================================
+feature                       eta2          p   highest vs lowest
+upper_lip_ratio              0.075    4.8e-37   Black vs White  (medium)
+nose_width_ratio             0.072    1.4e-35   Black vs East Asian  (medium)
+brow_height_ratio            0.059    1.6e-28   East Asian vs White  (small)
+chin_width_ratio             0.041    3.4e-19   Black vs Southeast Asian  (small)
+mouth_width_ratio            0.023    4.1e-10   Black vs East Asian  (small)
+lip_thickness_ratio          0.022    2.0e-09   Black vs Indian  (small)
+nose_length_ratio            0.021    2.7e-09   Middle Eastern vs Latino_Hispanic  (small)
+jaw_width_ratio              0.018    1.5e-07   Middle Eastern vs Southeast Asian  (small)
+lowerface_length_ratio       0.017    2.5e-07   Black vs Southeast Asian  (small)
+midface_length_ratio         0.017    3.8e-07   Middle Eastern vs Black  (small)
+lower_cheek_ratio            0.012    5.4e-05   Indian vs Southeast Asian  (small)
+eye_size_ratio               0.009    1.0e-03   Black vs East Asian  (-)
+face_aspect_ratio            0.007    8.4e-03   Indian vs Middle Eastern  (-)
+philtrum_ratio               0.006    3.3e-02   White vs Indian  (-)
+eye_openness_ratio           0.006    4.0e-02   Indian vs Southeast Asian  (-)
+jaw_angle_sharpness          0.005    7.8e-02   Middle Eastern vs Indian  (-)
+eye_spacing_ratio            0.005    9.1e-02   East Asian vs Indian  (-)
+cheekbone_width_ratio        0.005    9.9e-02   Indian vs Black  (-)
+eye_tilt_deg                 0.002    4.6e-01   White vs Latino_Hispanic  (-)
+mouth_corner_tilt_deg        0.002    4.9e-01   Southeast Asian vs Latino_Hispanic  (-)
+brow_tilt_deg                0.002    6.0e-01   Black vs Latino_Hispanic  (-)
+nose_tip_deviation_ratio     0.001    9.6e-01   White vs Black  (-)
+symmetry_error               0.000    1.0e+00   East Asian vs Black  (-)
+
+2 of 23 features show a medium or larger region effect. These are the ones region conditioning matters for.
+
+========================================================================
+E3  Does region conditioning change the classifications?  [HEADLINE]
+========================================================================
+By region:
+                     n  changed      pct
+race                                    
+Black             8142      831     10.2
+East Asian        8234      676      8.2
+Indian            6900      459      6.7
+Latino_Hispanic   7107      256      3.6
+Middle Eastern    6141      375      6.1
+Southeast Asian   7452      331      4.4
+White            10465      569      5.4
+
+Overall: 6.4% of classifications change.
+
+Top 8 features by change rate:
+  nose_width_ratio             15.0%
+  brow_height_ratio            12.6%
+  upper_lip_ratio              12.4%
+  mouth_width_ratio             9.7%
+  eye_spacing_ratio             9.5%
+  eye_size_ratio                9.0%
+  chin_width_ratio              8.5%
+  jaw_width_ratio               8.3%
+
+========================================================================
+E4a  Is the beauty score biased by region?
+========================================================================
+                       mu     sigma     n  z_vs_global
+region                                                
+Middle Eastern     50.368    15.591  3874        1.201
+White              50.069    15.266  6488        1.118
+Indian             47.760    13.960  4763        0.477
+Latino_Hispanic    46.826    14.480  5236        0.218
+Southeast Asian    42.552    13.696  4538       -0.969
+East Asian         42.479    14.034  5048       -0.989
+Black              42.236    14.558  4953       -1.056
+
+Spread in mean raw score: 8.13 points (Middle Eastern highest, Black lowest)
+After region z-normalisation every group centres on 0 by construction,
+so this spread is exactly what the normalisation removes.
+
+========================================================================
+E6  Which measurements differ by sex?  (cost of pooling)
+========================================================================
+feature                          d   size
+chin_width_ratio             0.429   small
+philtrum_ratio               0.400   small
+mouth_width_ratio           -0.327   small
+brow_height_ratio           -0.326   small
+jaw_width_ratio              0.251   small
+lower_cheek_ratio            0.218   small
+eye_size_ratio              -0.201   small
+lip_thickness_ratio         -0.186   -
+lowerface_length_ratio       0.177   -
+eye_openness_ratio          -0.155   -
+midface_length_ratio        -0.113   -
+nose_width_ratio             0.110   -
+eye_spacing_ratio            0.081   -
+jaw_angle_sharpness         -0.065   -
+face_aspect_ratio            0.061   -
+cheekbone_width_ratio        0.059   -
+nose_tip_deviation_ratio    -0.055   -
+upper_lip_ratio             -0.025   -
+symmetry_error              -0.023   -
+eye_tilt_deg                -0.023   -
+mouth_corner_tilt_deg       -0.016   -
+brow_tilt_deg                0.010   -
+nose_length_ratio            0.005   -
+
+0 of 23 features show a medium or larger sex difference.
+These are what pooling averages away. We ship pooled by choice; this is the measured cost.
+
+========================================================================
+tables and figures written to /home/tr3x/Projects/glow-mark/data/processed/experiments
+Still outstanding: E4b (needs MEBeauty human ratings), E5 (dev set).
+========================================================================
