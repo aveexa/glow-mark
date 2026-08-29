@@ -53,12 +53,6 @@ PCTL["jawOpen"] = 0.96
 PCTL["mouthSmileLeft"] = 0.97
 PCTL["mouthSmileRight"] = 0.97
 
-# CLIP zero-shot cut for the realness gate (softmax mass on the two human prompts).
-# Not calibrated here — this script only sees FairFace, which has no negative class.
-# The value comes from backend/scripts/calibrate_realness.py; it is mirrored so that
-# re-running this script does not silently reset the threshold. Keep the two in sync.
-REALNESS_MIN_P_PHOTO = 0.3977
-
 
 def rejected_mask(df, thr):
     """thr: dict signal -> scalar, or dict signal -> Series aligned to df.index."""
@@ -156,28 +150,34 @@ def main():
     print("floor is 200 —", "OK" if per_cell > 400 else "TOO THIN, loosen further")
 
     # ── 5. write config ─────────────────────────────────────────────────
-    cfg = {
-        "pose": {"yaw_max_deg": yaw_lim, "pitch_max_deg": pitch_lim,
-                 "roll_max_deg": 25.0, "roll_autocorrect": True},
-        # Realness is not calibrated from this dataset (every FairFace image is a
-        # real photograph); carried here so re-running does not drop the key.
-        "realness": {"min_p_photo": REALNESS_MIN_P_PHOTO},
-        "neutrality": {
-            "percentiles": PCTL,
-            "global": glob,
-            "per_region": {s: {k: float(v) for k, v in per[s].items()} for s in per},
-            "messages": SIGNALS,
-        },
-        "provenance": {
-            "source": str(SRC.relative_to(REPO)),
-            "n_extracted": int(len(df)),
-            "n_after_pose": int(len(g)),
-            "global_spread_pts": round(float(g_spread), 2),
-            "region_spread_pts": round(float(r_spread), 2),
-        },
+    # One file, one owner per block. This script owns `pose` and `neutrality` only.
+    # `realness` is owned by backend/scripts/calibrate_realness.py — it cannot be
+    # calibrated from FairFace, which has no negative class — so it is read through
+    # untouched rather than mirrored here. Same in reverse: the realness script
+    # leaves pose and neutrality alone.
+    cfg = json.loads(OUT.read_text()) if OUT.is_file() else {}
+    preserved = sorted(k for k in cfg if k not in ("pose", "neutrality", "provenance"))
+
+    cfg["pose"] = {"yaw_max_deg": yaw_lim, "pitch_max_deg": pitch_lim,
+                   "roll_max_deg": 25.0, "roll_autocorrect": True}
+    cfg["neutrality"] = {
+        "percentiles": PCTL,
+        "global": glob,
+        "per_region": {s: {k: float(v) for k, v in per[s].items()} for s in per},
+        "messages": SIGNALS,
     }
+    # Provenance is shared: update only our keys, leave other owners' entries alone.
+    cfg.setdefault("provenance", {}).update({
+        "source": str(SRC.relative_to(REPO)),
+        "n_extracted": int(len(df)),
+        "n_after_pose": int(len(g)),
+        "global_spread_pts": round(float(g_spread), 2),
+        "region_spread_pts": round(float(r_spread), 2),
+    })
     OUT.write_text(json.dumps(cfg, indent=2))
     print(f"\nwrote {OUT}")
+    print(f"  updated: pose, neutrality")
+    print(f"  preserved (owned elsewhere): {', '.join(preserved) or 'none'}")
     return 0
 
 

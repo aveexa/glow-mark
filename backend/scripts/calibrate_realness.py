@@ -31,6 +31,7 @@ BACKEND = Path(__file__).resolve().parent.parent
 REPO = BACKEND.parent
 sys.path.insert(0, str(BACKEND))
 
+import csv
 import json
 
 import cv2
@@ -52,6 +53,13 @@ RENDER_CATEGORY = "render3d"
 RENDER_SOURCES = {"m": "unreal_metahuman"}          # prefix -> name
 RENDER_DEFAULT_SOURCE = "ms_facesynthetics"          # bare numeric filenames
 
+# Per-image scores are cached so the held-out split can be re-derived, and a
+# different split re-evaluated, without re-running detection and CLIP over
+# thousands of images.
+SCORE_CACHE = REPO / "data" / "interim" / "realness_scores.csv"
+HOLDOUT_FRACTION = 0.30
+HOLDOUT_SEED = 20260829
+
 
 def reaches_gate(img) -> bool:
     """True when a single face is detected and the pose gate passes — i.e. the gate runs."""
@@ -65,18 +73,71 @@ def reaches_gate(img) -> bool:
         return False
 
 
+_CACHE: dict[str, tuple[float, bool]] = {}
+_MEASURED: list[tuple[str, float, bool]] = []
+
+
+def load_cache() -> None:
+    """Populate the in-memory score cache from a previous run, if present."""
+    if not SCORE_CACHE.is_file():
+        return
+    with SCORE_CACHE.open(newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            _CACHE[row["path"]] = (float(row["p_photo"]), row["reaches_gate"] == "1")
+    print(f"  loaded {len(_CACHE)} cached scores from {SCORE_CACHE.relative_to(REPO)}")
+
+
 def measure(paths):
     """Return (p_photo for all, p_photo for those that reach the gate)."""
     every, gated = [], []
     for p in paths:
-        img = cv2.imread(str(p))
-        if img is None:
-            continue
-        _, p_photo = check_realness(img)
+        key = str(p)
+        if key in _CACHE:
+            p_photo, gate = _CACHE[key]
+        else:
+            img = cv2.imread(key)
+            if img is None:
+                continue
+            _, p_photo = check_realness(img)
+            gate = reaches_gate(img)
+            _CACHE[key] = (p_photo, gate)
+        _MEASURED.append((key, p_photo, gate))
         every.append(p_photo)
-        if reaches_gate(img):
+        if gate:
             gated.append(p_photo)
     return np.array(every), np.array(gated)
+
+
+def write_cache() -> None:
+    """Persist every score measured this run, so the split can be revisited."""
+    SCORE_CACHE.parent.mkdir(parents=True, exist_ok=True)
+    with SCORE_CACHE.open("w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["path", "p_photo", "reaches_gate"])
+        for path, p_photo, gate in sorted(set(_MEASURED)):
+            w.writerow([path, f"{p_photo:.6f}", int(gate)])
+
+
+def holdout_check(pos_gated: np.ndarray) -> dict:
+    """Refit the cut on 70% of gated positives and score it on the untouched 30%.
+
+    The headline rate is true by construction — the threshold *is* that percentile of
+    the sample it was fitted on. This is the only figure that says anything about
+    unseen photographs.
+    """
+    rng = np.random.default_rng(HOLDOUT_SEED)
+    idx = rng.permutation(pos_gated.size)
+    n_hold = int(round(pos_gated.size * HOLDOUT_FRACTION))
+    hold, fit = pos_gated[idx[:n_hold]], pos_gated[idx[n_hold:]]
+    refit = float(np.percentile(fit, 100 * TARGET_FALSE_REJECT))
+    return {
+        "seed": HOLDOUT_SEED,
+        "fit_n": int(fit.size),
+        "holdout_n": int(hold.size),
+        "threshold_fitted_on_fit_split": round(refit, 4),
+        "false_reject_fitted": round(float((fit < refit).mean()), 4),
+        "false_reject_holdout": round(float((hold < refit).mean()), 4),
+    }
 
 
 def line(label, arr, pcts):
@@ -92,6 +153,7 @@ def main() -> int:
     neg_dir = Path(args[0])
     n_pos = int(args[1]) if len(args) > 1 else 600
 
+    load_cache()
     print("measuring positives (FairFace val)...", flush=True)
     pos_paths = sorted(x for x in VAL.iterdir() if x.suffix.lower() == ".jpg")[:n_pos]
     pos_all, pos_gated = measure(pos_paths)
@@ -169,6 +231,15 @@ def main() -> int:
             print(f"    {k:<28} {int((g >= target).sum()):>3}/{g.size:<3} "
                   f"({100*(g >= target).mean():5.1f}%)")
 
+    hc = holdout_check(pos_gated)
+    print("\n" + "=" * 78)
+    print("HELD-OUT CHECK — the fitted rate is true by construction; this is not")
+    print("=" * 78)
+    print(f"  split {100*(1-HOLDOUT_FRACTION):.0f}/{100*HOLDOUT_FRACTION:.0f} of gated positives, seed {HOLDOUT_SEED}")
+    print(f"  refit on {hc['fit_n']} -> threshold {hc['threshold_fitted_on_fit_split']:.4f}")
+    print(f"  false-reject, fitted split  ({hc['fit_n']:>4}): {100*hc['false_reject_fitted']:.2f}%")
+    print(f"  false-reject, held-out      ({hc['holdout_n']:>4}): {100*hc['false_reject_holdout']:.2f}%")
+
     overlap = neg_gated[neg_gated >= target]
     if overlap.size == 0:
         lo, hi = neg_gated.max() if neg_gated.size else 0.0, pos_gated.min()
@@ -184,7 +255,12 @@ def main() -> int:
     def summarize(arr, pcts):
         return {f"p{p}": round(float(np.percentile(arr, p)), 4) for p in pcts} if arr.size else {}
 
-    cfg = json.loads(GATE_CONFIG_PATH.read_text())
+    # One file, one owner per block. This script owns `realness` and the
+    # `provenance.realness_calibration` entry only; `pose` and `neutrality` belong to
+    # backend/scripts/calibrate_gates.py and are read through untouched.
+    cfg = json.loads(GATE_CONFIG_PATH.read_text()) if GATE_CONFIG_PATH.is_file() else {}
+    preserved = sorted(k for k in cfg if k not in ("realness", "provenance"))
+    cfg.setdefault("realness", {})
     cfg.setdefault("provenance", {})["realness_calibration"] = {
         "note": (
             "The gate only sees images the landmark detector meshes, so "
@@ -199,6 +275,14 @@ def main() -> int:
             "prompt set, not of one generator. Accepted deliberately: the leak is one "
             "category, while the cut that would exclude it rejects nearly every real "
             "photograph. Closing it needs a second discriminator, not a threshold."
+        ),
+        "detector_provides_no_discrimination": (
+            "The landmark detector is not a second line of defence here. Unreal "
+            "MetaHuman renders reached the gate 30/30 — every one was meshed "
+            "successfully — and Microsoft FaceSynthetics 16/30. For photorealistic "
+            "renders the entire burden of rejection falls on CLIP. Contrast the "
+            "classes the detector does filter on its own: statues, cats and dogs "
+            "reached the gate 0/25, 0/6 and 0/6."
         ),
         "target_false_reject": TARGET_FALSE_REJECT,
         "positive_source": "datasets/FairFace/val",
@@ -227,7 +311,8 @@ def main() -> int:
         "previous_threshold": cur,
         "false_reject_at_previous": round(float((pos_gated < cur).mean()), 4),
         "leak_at_previous": round(float((neg_gated >= cur).mean()), 4),
-        "false_reject_at_applied": round(float((pos_gated < target).mean()), 4),
+        "false_reject_at_applied_fitted": round(float((pos_gated < target).mean()), 4),
+        "holdout_validation": hc,
         "leak_at_applied": round(float((neg_gated >= target).mean()), 4),
         "leak_at_applied_excluding_renders": (
             round(float((other_gated >= target).mean()), 4) if other_gated.size else None),
@@ -242,6 +327,11 @@ def main() -> int:
         print(f"\n  min_p_photo left at {cur:.4f} (pass --set to apply {target:.4f})")
     GATE_CONFIG_PATH.write_text(json.dumps(cfg, indent=2))
     print(f"  recorded distributions in {GATE_CONFIG_PATH.relative_to(REPO)}")
+    print(f"  preserved (owned elsewhere): {', '.join(preserved) or 'none'}")
+
+    write_cache()
+    print(f"  cached {len(set(_MEASURED))} per-image scores in "
+          f"{SCORE_CACHE.relative_to(REPO)} (re-runs and alternate splits are cheap)")
     return 0
 
 

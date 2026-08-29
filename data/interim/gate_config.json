@@ -219,6 +219,7 @@
     "realness_calibration": {
       "note": "The gate only sees images the landmark detector meshes, so 'reaching_gate' is the population that matters; everything else is already rejected as NO_FACE_DETECTED.",
       "known_limitation": "Photorealistic 3D-rendered faces pass this gate. They score inside the real-photograph distribution and are the negative most likely to be meshed. Measured across two independent generators (Microsoft FaceSynthetics and Unreal MetaHuman), so this is a property of the CLIP prompt set, not of one generator. Accepted deliberately: the leak is one category, while the cut that would exclude it rejects nearly every real photograph. Closing it needs a second discriminator, not a threshold.",
+      "detector_provides_no_discrimination": "The landmark detector is not a second line of defence here. Unreal MetaHuman renders reached the gate 30/30 \u2014 every one was meshed successfully \u2014 and Microsoft FaceSynthetics 16/30. For photorealistic renders the entire burden of rejection falls on CLIP. Contrast the classes the detector does filter on its own: statues, cats and dogs reached the gate 0/25, 0/6 and 0/6.",
       "target_false_reject": 0.02,
       "positive_source": "datasets/FairFace/val",
       "negative_categories": {
@@ -334,14 +335,22 @@
           "max": 0.944
         }
       },
-      "overlap_count": 47,
-      "applied_threshold": 0.3977,
-      "previous_threshold": 0.6,
-      "false_reject_at_previous": 0.0894,
-      "leak_at_previous": 0.4231,
-      "false_reject_at_applied": 0.02,
+      "previous_threshold": 0.3977,
+      "false_reject_at_previous": 0.0202,
+      "leak_at_previous": 0.6026,
+      "false_reject_at_applied_fitted": 0.0202,
+      "holdout_validation": {
+        "seed": 20260829,
+        "fit_n": 971,
+        "holdout_n": 416,
+        "threshold_fitted_on_fit_split": 0.41,
+        "false_reject_fitted": 0.0206,
+        "false_reject_holdout": 0.0288
+      },
       "leak_at_applied": 0.6026,
-      "leak_at_applied_excluding_renders": 0.0312
+      "leak_at_applied_excluding_renders": 0.0312,
+      "overlap_count": 47,
+      "applied_threshold": 0.3977
     }
   }
 }
