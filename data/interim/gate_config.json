@@ -215,6 +215,75 @@
     "n_extracted": 2367,
     "n_after_pose": 1668,
     "global_spread_pts": 18.0,
-    "region_spread_pts": 6.34
+    "region_spread_pts": 6.34,
+    "realness_calibration": {
+      "note": "Measured, not applied. The gate only sees images the landmark detector meshes, so 'reaching_gate' is the population that matters. min_p_photo is unchanged pending a decision on the overlap.",
+      "positive_source": "datasets/FairFace/val",
+      "negative_categories": {
+        "anime": 8,
+        "cartoon": 20,
+        "cat": 6,
+        "dog": 6,
+        "painting": 8,
+        "primate": 10,
+        "render3d": 30,
+        "statue": 10
+      },
+      "positive_all": {
+        "n": 600,
+        "p1": 0.2704,
+        "p5": 0.477,
+        "p10": 0.586,
+        "p25": 0.715,
+        "p50": 0.8294
+      },
+      "positive_reaching_gate": {
+        "n": 333,
+        "p1": 0.2815,
+        "p5": 0.5149,
+        "p10": 0.6044,
+        "p25": 0.7558,
+        "p50": 0.8513
+      },
+      "negative_reaching_gate": {
+        "n": 38,
+        "p50": 0.3099,
+        "p75": 0.6397,
+        "p90": 0.8874,
+        "p99": 0.9779,
+        "p100": 0.988
+      },
+      "negative_reaching_gate_by_category": {
+        "cartoon": {
+          "n": 17,
+          "of": 20,
+          "median": 0.1278,
+          "max": 0.7218
+        },
+        "painting": {
+          "n": 1,
+          "of": 8,
+          "median": 0.105,
+          "max": 0.105
+        },
+        "primate": {
+          "n": 4,
+          "of": 10,
+          "median": 0.0038,
+          "max": 0.0143
+        },
+        "render3d": {
+          "n": 16,
+          "of": 30,
+          "median": 0.7101,
+          "max": 0.988
+        }
+      },
+      "current_threshold": 0.6,
+      "current_false_reject_rate": 0.0901,
+      "current_leak_rate": 0.2895,
+      "threshold_for_2pct_false_reject": 0.3736,
+      "overlap_count": 17
+    }
   }
 }
