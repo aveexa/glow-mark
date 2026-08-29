@@ -63,4 +63,5 @@ data/interim/geometry_features/*.json
 
 
 # resources
+/resources/
 /datasets/
