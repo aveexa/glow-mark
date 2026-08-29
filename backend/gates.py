@@ -63,6 +63,19 @@ def load_gate_config() -> Dict[str, Any]:
         return json.load(f)
 
 
+def beauty_region_normalize() -> bool:
+    """Whether the beauty score is z-normalised against the user's region.
+
+    Off by default. E4b measured this against MEBeauty human ratings and it made
+    agreement worse, not better — pooled Pearson 0.236 raw against 0.209
+    normalised, bootstrap 95% CI [-0.038, -0.016]. The code path is kept because
+    the finding is one dataset deep and the reference statistics still carry
+    beauty_score_raw. This flag governs the beauty score only; region conditioning
+    of the geometry features is a different mechanism and is always on.
+    """
+    return bool(load_gate_config().get("beauty", {}).get("region_normalize", False))
+
+
 def neutrality_threshold_mode() -> str:
     """``region`` (default) or ``global``, from the NEUTRALITY_THRESHOLD_MODE env var."""
     mode = os.environ.get(

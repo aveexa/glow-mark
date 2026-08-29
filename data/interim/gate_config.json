@@ -8,6 +8,10 @@
   "realness": {
     "min_p_photo": 0.3977
   },
+  "beauty": {
+    "region_normalize": false,
+    "_why": "Off by default. E4b measured agreement with MEBeauty human ratings on 1,763 gated faces: pooled Pearson fell from 0.236 raw to 0.209 region-normalised, bootstrap 95% CI [-0.038, -0.016], excluding zero. Region conditioning of the geometry features is a separate mechanism and stays on. beauty_score_raw remains in region_reference_stats.csv because E4a depends on it and because turning this back on requires it."
+  },
   "neutrality": {
     "percentiles": {
       "jawOpen": 0.96,

@@ -33,6 +33,7 @@ from face_normalize import DEFAULT_OUTPUT_SIZE, square_face_crop
 from gates import (
     NEUTRALITY_THRESHOLD_MODE_REGION,
     autocorrect_roll,
+    beauty_region_normalize,
     check_neutrality,
     check_pose,
     check_realness,
@@ -300,11 +301,23 @@ def _region_normalize_beauty(
 ) -> Tuple[float, str]:
     """Re-express the raw beauty score against the region's own distribution.
 
-    Maps the raw score onto the global arm's scale — same z, global mean and spread —
-    so the existing display calibration stays valid while the score becomes relative
-    to the user's population rather than to the checkpoint's training mix.
-    Returns the (possibly unchanged) raw score and a note for the API payload.
+    Disabled by default (beauty.region_normalize in gate_config.json). E4b tested it
+    against MEBeauty human ratings and it reduced agreement rather than improving it:
+    pooled Pearson 0.236 raw against 0.209 normalised, bootstrap 95% CI
+    [-0.038, -0.016]. The path is kept, not deleted — one dataset is thin evidence to
+    remove a mechanism on, and beauty_score_raw stays in the reference table.
+
+    When enabled, maps the raw score onto the global arm's scale — same z, global mean
+    and spread — so the existing display calibration stays valid while the score
+    becomes relative to the user's population. Returns the (possibly unchanged) raw
+    score and a note for the API payload.
+
+    This governs the beauty score alone. Region conditioning of the geometry features,
+    the p20/p80 classes and the UI gauges is a separate mechanism and is unaffected.
     """
+    if not beauty_region_normalize():
+        return beauty_raw, "Beauty: raw score (region normalisation off; see E4b)"
+
     region = beauty_stats(region_weights)
     reference = beauty_stats(None)
     if not region or not reference or region["sigma"] <= 0.0:
