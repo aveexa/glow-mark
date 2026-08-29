@@ -1,0 +1,3 @@
+framing,n,pearson,spearman
+original framing,1654,0.2362230899432489,0.21539791749034753
+double-cropped (MTCNN + square_face_crop),1654,0.23696605825228678,0.22878998828924538
