@@ -54,7 +54,10 @@ PCTL["mouthSmileLeft"] = 0.97
 PCTL["mouthSmileRight"] = 0.97
 
 # CLIP zero-shot cut for the realness gate (softmax mass on the two human prompts).
-REALNESS_MIN_P_PHOTO = 0.60
+# Not calibrated here — this script only sees FairFace, which has no negative class.
+# The value comes from backend/scripts/calibrate_realness.py; it is mirrored so that
+# re-running this script does not silently reset the threshold. Keep the two in sync.
+REALNESS_MIN_P_PHOTO = 0.3977
 
 
 def rejected_mask(df, thr):

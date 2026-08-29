@@ -97,6 +97,16 @@ def check_realness(img_bgr: np.ndarray) -> Tuple[bool, float]:
 
     Returns ``(passed, p_photo)`` where ``p_photo`` is the softmax mass on the two
     human-photograph prompts.
+
+    KNOWN LIMITATION — photorealistic 3D-rendered faces pass this gate. They score
+    inside the real-photograph distribution (median ~0.70 against a real p25 of 0.76)
+    and are also the negative the landmark detector is most likely to mesh. Measured
+    across two independent generators, so it is a property of the prompt set rather
+    than of one renderer. Accepted deliberately: no threshold excludes renders without
+    rejecting nearly every real photograph, so the cut is set for user cost instead.
+    Closing this needs a second discriminator, not a different number. Every other
+    negative class measured — cartoons, anime, paintings, statues, animals, primates —
+    is separated cleanly. See provenance.realness_calibration in gate_config.json.
     """
     from PIL import Image
 

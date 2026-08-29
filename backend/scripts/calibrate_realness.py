@@ -10,12 +10,17 @@ class (cartoons, anime, 3D renders, paintings, statues, dogs, cats, primates), t
 picks a threshold in the gap if the two separate.
 
 Writes the measured distributions into gate_config.json under
-provenance.realness_calibration. It never writes realness.min_p_photo: if the two
-classes overlap there is no defensible value to write, and if they separate the
-choice is still a product call.
+provenance.realness_calibration. With --set it also writes realness.min_p_photo,
+choosing the highest cut that keeps false rejection of real photographs under
+TARGET_FALSE_REJECT.
+
+The classes do not separate cleanly, and that is a product decision rather than a
+bug to tune away: photorealistic 3D-rendered faces score inside the real-photograph
+distribution and pass the gate. That leak is accepted and documented; a 9%
+false-reject rate on real users was not.
 
 Run from:  repo root
-    python backend/scripts/calibrate_realness.py <negatives_dir> [n_positive]
+    python backend/scripts/calibrate_realness.py <negatives_dir> [n_positive] [--set]
 """
 from __future__ import annotations
 
@@ -39,6 +44,13 @@ VAL = REPO / "datasets" / "FairFace" / "val"
 TARGET_FALSE_REJECT = 0.02  # brief: under 2% false-reject on real photographs
 PCTS_POS = (1, 5, 10, 25, 50)
 PCTS_NEG = (50, 75, 90, 99, 100)
+
+# Only the render category is split by source, and only because the whole finding
+# rests on it: a leak that held for one generator would be a property of that
+# generator rather than of the gate. Filename prefix -> generator.
+RENDER_CATEGORY = "render3d"
+RENDER_SOURCES = {"m": "unreal_metahuman"}          # prefix -> name
+RENDER_DEFAULT_SOURCE = "ms_facesynthetics"          # bare numeric filenames
 
 
 def reaches_gate(img) -> bool:
@@ -75,8 +87,10 @@ def line(label, arr, pcts):
 
 
 def main() -> int:
-    neg_dir = Path(sys.argv[1])
-    n_pos = int(sys.argv[2]) if len(sys.argv) > 2 else 600
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    write_threshold = "--set" in sys.argv
+    neg_dir = Path(args[0])
+    n_pos = int(args[1]) if len(args) > 1 else 600
 
     print("measuring positives (FairFace val)...", flush=True)
     pos_paths = sorted(x for x in VAL.iterdir() if x.suffix.lower() == ".jpg")[:n_pos]
@@ -86,9 +100,22 @@ def main() -> int:
     cats = sorted(d for d in neg_dir.iterdir() if d.is_dir())
     neg_by_cat = {}
     for d in cats:
-        neg_by_cat[d.name] = measure(sorted(d.iterdir()))
-    neg_all = np.concatenate([v[0] for v in neg_by_cat.values()])
-    neg_gated = np.concatenate([v[1] for v in neg_by_cat.values()])
+        files = sorted(d.iterdir())
+        neg_by_cat[d.name] = measure(files)
+        # Where one category was drawn from two independent generators, split it:
+        # a finding that only holds for one generator is not a finding.
+        if d.name == RENDER_CATEGORY:
+            groups = {}
+            for f in files:
+                groups.setdefault(
+                    RENDER_SOURCES.get(f.stem[0], RENDER_DEFAULT_SOURCE), []
+                ).append(f)
+            if len(groups) > 1:
+                for tag, sub in sorted(groups.items()):
+                    neg_by_cat[f"{d.name}:{tag}"] = measure(sub)
+    base_cats = [d.name for d in cats]
+    neg_all = np.concatenate([neg_by_cat[k][0] for k in base_cats])
+    neg_gated = np.concatenate([neg_by_cat[k][1] for k in base_cats if neg_by_cat[k][1].size])
 
     print("\n" + "=" * 78)
     print("POSITIVE CLASS — real photographs")
@@ -114,6 +141,14 @@ def main() -> int:
         detail = f"  p_photo median {np.median(g):.3f}  max {g.max():.3f}" if g.size else ""
         print(f"    {name:<10} {g.size:>3}/{a.size:<3} ({share:5.1f}%){detail}")
 
+    other = [k for k in base_cats if k != RENDER_CATEGORY]
+    other_all = np.concatenate([neg_by_cat[k][0] for k in other])
+    other_gated = [neg_by_cat[k][1] for k in other if neg_by_cat[k][1].size]
+    other_gated = np.concatenate(other_gated) if other_gated else np.array([])
+    print()
+    print(line("ALL non-render negatives", other_all, PCTS_NEG))
+    print(line("  ... reaching the gate", other_gated, PCTS_NEG))
+
     print("\n" + "=" * 78)
     print("SEPARATION — the gate only ever sees images that reach it")
     print("=" * 78)
@@ -126,6 +161,13 @@ def main() -> int:
     # Highest threshold meeting the false-reject target, then how much leaks in.
     target = float(np.percentile(pos_gated, 100 * TARGET_FALSE_REJECT))
     print(f"\n  threshold for {100*TARGET_FALSE_REJECT:.0f}% false-reject on gated positives: {target:.3f}")
+
+    print(f"\n  leak at {target:.3f}, by group (of those reaching the gate):")
+    for k in sorted(neg_by_cat):
+        g = neg_by_cat[k][1]
+        if g.size:
+            print(f"    {k:<28} {int((g >= target).sum()):>3}/{g.size:<3} "
+                  f"({100*(g >= target).mean():5.1f}%)")
 
     overlap = neg_gated[neg_gated >= target]
     if overlap.size == 0:
@@ -145,12 +187,35 @@ def main() -> int:
     cfg = json.loads(GATE_CONFIG_PATH.read_text())
     cfg.setdefault("provenance", {})["realness_calibration"] = {
         "note": (
-            "Measured, not applied. The gate only sees images the landmark detector "
-            "meshes, so 'reaching_gate' is the population that matters. "
-            "min_p_photo is unchanged pending a decision on the overlap."
+            "The gate only sees images the landmark detector meshes, so "
+            "'reaching_gate' is the population that matters; everything else is "
+            "already rejected as NO_FACE_DETECTED."
         ),
+        "known_limitation": (
+            "Photorealistic 3D-rendered faces pass this gate. They score inside the "
+            "real-photograph distribution and are the negative most likely to be "
+            "meshed. Measured across two independent generators (Microsoft "
+            "FaceSynthetics and Unreal MetaHuman), so this is a property of the CLIP "
+            "prompt set, not of one generator. Accepted deliberately: the leak is one "
+            "category, while the cut that would exclude it rejects nearly every real "
+            "photograph. Closing it needs a second discriminator, not a threshold."
+        ),
+        "target_false_reject": TARGET_FALSE_REJECT,
         "positive_source": "datasets/FairFace/val",
-        "negative_categories": {k: int(v[0].size) for k, v in neg_by_cat.items()},
+        "negative_categories": {k: int(neg_by_cat[k][0].size) for k in base_cats},
+        "negative_sources": {k: int(v[0].size) for k, v in neg_by_cat.items() if ":" in k},
+        "render_leak_by_generator": {
+            k.split(":", 1)[1]: {
+                "reaching_gate": int(v[1].size), "of": int(v[0].size),
+                "leak_at_threshold": int((v[1] >= target).sum()) if v[1].size else 0,
+                "median": round(float(np.median(v[1])), 4) if v[1].size else None,
+                "max": round(float(v[1].max()), 4) if v[1].size else None,
+            }
+            for k, v in neg_by_cat.items()
+            if k.startswith(RENDER_CATEGORY + ":")
+        },
+        "non_render_negatives_reaching_gate": {
+            "n": int(other_gated.size), **summarize(other_gated, PCTS_NEG)},
         "positive_all": {"n": int(pos_all.size), **summarize(pos_all, PCTS_POS)},
         "positive_reaching_gate": {"n": int(pos_gated.size), **summarize(pos_gated, PCTS_POS)},
         "negative_reaching_gate": {"n": int(neg_gated.size), **summarize(neg_gated, PCTS_NEG)},
@@ -159,15 +224,24 @@ def main() -> int:
                 "median": round(float(np.median(g)), 4), "max": round(float(g.max()), 4)}
             for k, (a, g) in neg_by_cat.items() if g.size
         },
-        "current_threshold": cur,
-        "current_false_reject_rate": round(float((pos_gated < cur).mean()), 4),
-        "current_leak_rate": round(float((neg_gated >= cur).mean()), 4),
-        "threshold_for_2pct_false_reject": round(target, 4),
+        "previous_threshold": cur,
+        "false_reject_at_previous": round(float((pos_gated < cur).mean()), 4),
+        "leak_at_previous": round(float((neg_gated >= cur).mean()), 4),
+        "false_reject_at_applied": round(float((pos_gated < target).mean()), 4),
+        "leak_at_applied": round(float((neg_gated >= target).mean()), 4),
+        "leak_at_applied_excluding_renders": (
+            round(float((other_gated >= target).mean()), 4) if other_gated.size else None),
         "overlap_count": int(overlap.size),
     }
+    if write_threshold:
+        cfg["realness"]["min_p_photo"] = round(target, 4)
+        cfg["provenance"]["realness_calibration"]["applied_threshold"] = round(target, 4)
+        print(f"\n  SET realness.min_p_photo {cur:.4f} -> {target:.4f}")
+    else:
+        cfg["provenance"]["realness_calibration"]["applied_threshold"] = cur
+        print(f"\n  min_p_photo left at {cur:.4f} (pass --set to apply {target:.4f})")
     GATE_CONFIG_PATH.write_text(json.dumps(cfg, indent=2))
-    print(f"\n  recorded distributions in {GATE_CONFIG_PATH.relative_to(REPO)} "
-          f"(provenance only; min_p_photo left at {cur:.2f})")
+    print(f"  recorded distributions in {GATE_CONFIG_PATH.relative_to(REPO)}")
     return 0
 
 

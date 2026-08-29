@@ -6,7 +6,7 @@
     "roll_autocorrect": true
   },
   "realness": {
-    "min_p_photo": 0.6
+    "min_p_photo": 0.3977
   },
   "neutrality": {
     "percentiles": {
@@ -217,43 +217,86 @@
     "global_spread_pts": 18.0,
     "region_spread_pts": 6.34,
     "realness_calibration": {
-      "note": "Measured, not applied. The gate only sees images the landmark detector meshes, so 'reaching_gate' is the population that matters. min_p_photo is unchanged pending a decision on the overlap.",
+      "note": "The gate only sees images the landmark detector meshes, so 'reaching_gate' is the population that matters; everything else is already rejected as NO_FACE_DETECTED.",
+      "known_limitation": "Photorealistic 3D-rendered faces pass this gate. They score inside the real-photograph distribution and are the negative most likely to be meshed. Measured across two independent generators (Microsoft FaceSynthetics and Unreal MetaHuman), so this is a property of the CLIP prompt set, not of one generator. Accepted deliberately: the leak is one category, while the cut that would exclude it rejects nearly every real photograph. Closing it needs a second discriminator, not a threshold.",
+      "target_false_reject": 0.02,
       "positive_source": "datasets/FairFace/val",
       "negative_categories": {
-        "anime": 8,
+        "animal_afhq": 25,
+        "anime": 28,
         "cartoon": 20,
         "cat": 6,
         "dog": 6,
-        "painting": 8,
-        "primate": 10,
-        "render3d": 30,
-        "statue": 10
+        "painting": 28,
+        "primate": 30,
+        "render3d": 60,
+        "statue": 25
+      },
+      "negative_sources": {
+        "render3d:ms_facesynthetics": 30,
+        "render3d:unreal_metahuman": 30
+      },
+      "render_leak_by_generator": {
+        "ms_facesynthetics": {
+          "reaching_gate": 16,
+          "of": 30,
+          "leak_at_threshold": 16,
+          "median": 0.7101,
+          "max": 0.988
+        },
+        "unreal_metahuman": {
+          "reaching_gate": 30,
+          "of": 30,
+          "leak_at_threshold": 30,
+          "median": 0.6989,
+          "max": 0.944
+        }
+      },
+      "non_render_negatives_reaching_gate": {
+        "n": 32,
+        "p50": 0.0585,
+        "p75": 0.1724,
+        "p90": 0.3089,
+        "p99": 0.609,
+        "p100": 0.7218
       },
       "positive_all": {
-        "n": 600,
-        "p1": 0.2704,
-        "p5": 0.477,
-        "p10": 0.586,
-        "p25": 0.715,
-        "p50": 0.8294
+        "n": 2500,
+        "p1": 0.2696,
+        "p5": 0.4831,
+        "p10": 0.5843,
+        "p25": 0.7141,
+        "p50": 0.8314
       },
       "positive_reaching_gate": {
-        "n": 333,
-        "p1": 0.2815,
-        "p5": 0.5149,
-        "p10": 0.6044,
-        "p25": 0.7558,
-        "p50": 0.8513
+        "n": 1387,
+        "p1": 0.297,
+        "p5": 0.5144,
+        "p10": 0.6104,
+        "p25": 0.7552,
+        "p50": 0.8564
       },
       "negative_reaching_gate": {
-        "n": 38,
-        "p50": 0.3099,
-        "p75": 0.6397,
-        "p90": 0.8874,
-        "p99": 0.9779,
+        "n": 78,
+        "p50": 0.5301,
+        "p75": 0.7716,
+        "p90": 0.8818,
+        "p99": 0.967,
         "p100": 0.988
       },
       "negative_reaching_gate_by_category": {
+        "animal_afhq": {
+          "n": 2,
+          "of": 25,
+          "median": 0.035,
+          "max": 0.0383
+        },
+        "anime": {
+          "n": 3,
+          "of": 28,
+          "median": 0.0447,
+          "max": 0.0468
+        },
         "cartoon": {
           "n": 17,
           "of": 20,
@@ -261,29 +304,44 @@
           "max": 0.7218
         },
         "painting": {
-          "n": 1,
-          "of": 8,
-          "median": 0.105,
-          "max": 0.105
+          "n": 2,
+          "of": 28,
+          "median": 0.2079,
+          "max": 0.3108
         },
         "primate": {
-          "n": 4,
-          "of": 10,
-          "median": 0.0038,
+          "n": 8,
+          "of": 30,
+          "median": 0.0028,
           "max": 0.0143
         },
         "render3d": {
+          "n": 46,
+          "of": 60,
+          "median": 0.6989,
+          "max": 0.988
+        },
+        "render3d:ms_facesynthetics": {
           "n": 16,
           "of": 30,
           "median": 0.7101,
           "max": 0.988
+        },
+        "render3d:unreal_metahuman": {
+          "n": 30,
+          "of": 30,
+          "median": 0.6989,
+          "max": 0.944
         }
       },
-      "current_threshold": 0.6,
-      "current_false_reject_rate": 0.0901,
-      "current_leak_rate": 0.2895,
-      "threshold_for_2pct_false_reject": 0.3736,
-      "overlap_count": 17
+      "overlap_count": 47,
+      "applied_threshold": 0.3977,
+      "previous_threshold": 0.6,
+      "false_reject_at_previous": 0.0894,
+      "leak_at_previous": 0.4231,
+      "false_reject_at_applied": 0.02,
+      "leak_at_applied": 0.6026,
+      "leak_at_applied_excluding_renders": 0.0312
     }
   }
 }
