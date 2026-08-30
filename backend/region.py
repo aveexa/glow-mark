@@ -14,6 +14,7 @@ verified against ground-truth labels by backend/scripts/verify_region_order.py.
 
 from __future__ import annotations
 
+import json
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -66,6 +67,10 @@ GLOBAL_DISPLAY_LABEL = "All (global)"
 # Below this the top region is not a confident enough single answer to name alone,
 # so the label names the top two instead. Display wording only — no gate reads it.
 REFERENCE_LABEL_MIN_TOP = 0.5
+
+# A supplied mixture must be a distribution. Slack covers float round-tripping
+# through JSON, not sloppy input.
+REGION_MIXTURE_TOLERANCE = 0.02
 
 # FairFace's own preprocessing (predict.py): resize to 224, ImageNet normalization.
 _INPUT_SIZE = 224
@@ -127,12 +132,7 @@ def region_choices() -> list[dict]:
 
 
 def normalize_region_override(value: str | None) -> str | None:
-    """Validate a user-supplied override against the known groups.
-
-    Returns a region name, ``GLOBAL_REGION``, or None when the value is absent or
-    unrecognised — an unrecognised override is ignored rather than rejected, so a
-    stale client cannot break analysis.
-    """
+    """A region name or ``GLOBAL_REGION`` from a caller-supplied string, else None."""
     if not value:
         return None
     candidate = str(value).strip()
@@ -142,6 +142,55 @@ def normalize_region_override(value: str | None) -> str | None:
         if candidate.lower() == name.lower():
             return name
     return None
+
+
+def parse_region_override(value: str | None) -> Tuple[str, object] | None:
+    """Validate a user-supplied override into ``(kind, payload)``, or None to ignore.
+
+    Two kinds of assertion, because confirming and correcting are different acts:
+
+      ``mixture``  a full weight mapping, i.e. "use exactly this distribution". The
+                   client sends this when the user re-picks the group inference
+                   already chose, so the analysis reproduces the original exactly.
+      ``name``     a single group, i.e. "inference got this wrong, use this one".
+                   Applied as a one-hot, which is deliberately stricter than a blend.
+      ``global``   compare against everyone.
+
+    Anything unrecognised returns None and is ignored rather than rejected, so a
+    stale or malformed client degrades to inference instead of failing the request.
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    if text == GLOBAL_REGION:
+        return ("global", None)
+
+    if text.startswith("{"):
+        try:
+            data = json.loads(text)
+        except (TypeError, ValueError):
+            return None
+        if not isinstance(data, dict) or not data:
+            return None
+        weights: Dict[str, float] = {}
+        for key, raw in data.items():
+            if key not in REGION_NAMES:
+                return None
+            try:
+                weight = float(raw)
+            except (TypeError, ValueError):
+                return None
+            if weight < 0.0 or weight != weight:  # negative or NaN
+                return None
+            weights[key] = weight
+        if abs(sum(weights.values()) - 1.0) > REGION_MIXTURE_TOLERANCE:
+            return None
+        return ("mixture", weights)
+
+    name = normalize_region_override(text)
+    return ("name", name) if name is not None else None
 
 
 def reference_label(weights: Mapping[str, float] | None) -> str:

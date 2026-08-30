@@ -55,6 +55,11 @@ function DashboardContent() {
     // The comparison group currently in force, so a retry reproduces the same
     // request rather than silently reverting to the inferred group. Session-only.
     const [activeRegionOverride, setActiveRegionOverride] = useState<string | undefined>(undefined)
+    // The mixture inference originally produced, kept so returning to that group is
+    // a confirmation rather than a correction. Picking the group inference already
+    // chose means "yes, that's right" and must reproduce the original analysis; a
+    // one-hot would instead apply a stricter threshold than the one that ran.
+    const [inferredRegion, setInferredRegion] = useState<{ selected: string; weights: Record<string, number> } | null>(null)
 
     useEffect(() => {
         if (user) {
@@ -121,6 +126,7 @@ function DashboardContent() {
 
     const handleFileSelect = useCallback((file: File) => {
         setActiveRegionOverride(undefined)
+        setInferredRegion(null)
         setFile(file)
         const url = URL.createObjectURL(file)
         setPreviewUrl(url)
@@ -157,6 +163,16 @@ function DashboardContent() {
         const effectiveOverride = regionOverride ?? activeRegionOverride
         if (isRegionRerun) setActiveRegionOverride(regionOverride)
 
+        // Confirming the inferred group sends the mixture itself, so the backend
+        // reproduces the original analysis exactly. Any other group is a correction
+        // and goes as a name, which the backend applies as a one-hot.
+        const overrideField =
+            effectiveOverride !== undefined &&
+            inferredRegion !== null &&
+            effectiveOverride === inferredRegion.selected
+                ? JSON.stringify(inferredRegion.weights)
+                : effectiveOverride
+
         // A region re-run keeps the results on screen with an inline pending marker;
         // swapping to the progress view for what is a re-read of the same photo would
         // read as losing the result. The staged delays below are presentation for a
@@ -180,7 +196,7 @@ function DashboardContent() {
             // Call the backend inference (orchestrator) — same path as the /analyze page
             const form = new FormData()
             form.append('image', selectedFile)
-            if (effectiveOverride !== undefined) form.append('region_override', effectiveOverride)
+            if (overrideField !== undefined) form.append('region_override', overrideField)
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'
             const resp = await fetch(`${backendUrl}/analyze`, { method: 'POST', body: form })
             const data: BackendAnalyzeApiResponse = await resp.json().catch(() => ({} as any))
@@ -244,6 +260,14 @@ function DashboardContent() {
                     'Images are processed temporarily for inference; not stored permanently by this app.',
                     'For best results, use a clear, front-facing photo with good lighting.',
                 ],
+            }
+
+            // Remember the inferred mixture the first time we get one. A correction
+            // returns source 'user_override', which must not overwrite it, or going
+            // away and back would lose the distribution we need to reproduce.
+            const reg = okData?.region
+            if (reg?.source === 'inferred' && reg.weights && reg.selected) {
+                setInferredRegion({ selected: reg.selected, weights: reg.weights })
             }
 
             setResult(analysisResult)
@@ -322,6 +346,7 @@ function DashboardContent() {
 
     const handleAnalyzeAnother = () => {
         setActiveRegionOverride(undefined)
+        setInferredRegion(null)
         clearAll()
         setAnalysisStatus('idle')
     }

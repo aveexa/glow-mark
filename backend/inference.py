@@ -430,15 +430,24 @@ def _resolve_region(
     weights left null rather than faked as a uniform distribution.
     """
     try:
-        from region import GLOBAL_REGION, normalize_region_override, predict_region_weights
+        from region import parse_region_override, predict_region_weights
     except Exception as e:  # noqa: BLE001 — region is optional, the global arm still works
         return None, "global_fallback", f"Region: unavailable ({e}); using global norms"
 
-    override = normalize_region_override(region_override)
-    if override == GLOBAL_REGION:
-        return None, "user_override", "Region: user chose All (global); using global norms"
-    if override is not None:
-        return {override: 1.0}, "user_override", f"Region: user override -> {override}"
+    parsed = parse_region_override(region_override)
+    if parsed is not None:
+        kind, payload = parsed
+        if kind == "global":
+            return None, "user_override", "Region: user chose All (global); using global norms"
+        if kind == "mixture":
+            # Confirming the group inference already chose. The caller hands back the
+            # same distribution, so this reproduces the original analysis exactly —
+            # it is not a correction, and calling it one would misreport the result.
+            top = max(payload, key=payload.__getitem__)
+            return payload, "inferred", f"Region: confirmed mixture (top {top} {payload[top]:.2f})"
+        # A single group is the user asserting inference was wrong. A one-hot is
+        # deliberately stricter than a blend; that is what correcting it means.
+        return {payload: 1.0}, "user_override", f"Region: user override -> {payload}"
 
     try:
         weights = predict_region_weights(img_bgr)

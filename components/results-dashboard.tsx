@@ -422,7 +422,13 @@ export function ResultsDashboard({
                             className="text-sm font-medium rounded-lg border border-black/10 bg-background px-3 py-1.5 disabled:opacity-60"
                             value={region.selected ?? ''}
                             disabled={!onRegionChange || regionPending}
-                            onChange={(e) => onRegionChange?.(e.target.value)}
+                            onChange={(e) => {
+                              // Re-selecting what is already shown asserts nothing, so
+                              // it should cost nothing. Without this it re-submits and
+                              // can return a different verdict for the same choice.
+                              if (e.target.value === region.selected) return
+                              onRegionChange?.(e.target.value)
+                            }}
                           >
                             {regionChoices.map((g) => (
                               <option key={g.value} value={g.value}>
