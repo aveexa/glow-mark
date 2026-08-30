@@ -326,6 +326,14 @@ export function ResultsDashboard({
                 </CardHeader>
                 <CardContent className="pt-8 pb-10">
                   <ScoreGauge score={result.score} />
+                  {/* The score and the measurements have different scopes: the
+                      measurements are region-conditioned, the score is not
+                      (gate_config beauty.region_normalize is off — E4b measured that
+                      normalising it reduced agreement with human ratings). Say so,
+                      so the two numbers are not read as the same kind of thing. */}
+                  <p className="mt-4 text-center text-xs text-muted-foreground">
+                    Not adjusted for comparison group.
+                  </p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -460,6 +468,9 @@ export function ResultsDashboard({
                         </div>
                       ))}
                     </div>
+                    <p className="mt-6 text-xs text-muted-foreground">
+                      Compared against typical values for your comparison group.
+                    </p>
                   </TabsContent>
 
                   <TabsContent value="recommendations" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
