@@ -51,6 +51,7 @@ function DashboardContent() {
         clearAll,
     } = useAnalysisStore()
     const [isProcessing, setIsProcessing] = useState(false)
+    const [regionPending, setRegionPending] = useState(false)
 
     useEffect(() => {
         if (user) {
@@ -141,24 +142,37 @@ function DashboardContent() {
         setShowAnalysis(false)
     }
 
-    const processAnalysis = async () => {
+    // regionOverride re-runs the same photo against a different comparison group.
+    // Session-only: it is sent per request, never persisted, and an override re-run
+    // does not create a second saved analysis.
+    const processAnalysis = async (regionOverride?: string) => {
         if (!selectedFile || !user) return
+        const isRegionRerun = regionOverride !== undefined
 
-        setIsProcessing(true)
-        setAnalysisStatus('processing')
+        // A region re-run keeps the results on screen with an inline pending marker;
+        // swapping to the progress view for what is a re-read of the same photo would
+        // read as losing the result. The staged delays below are presentation for a
+        // first analysis and are skipped here for the same reason.
+        if (isRegionRerun) {
+            setRegionPending(true)
+        } else {
+            setIsProcessing(true)
+            setAnalysisStatus('processing')
+        }
         setError(null)
 
         try {
-            setProgressStep(PROCESSING_STEPS[0])
-            await new Promise((resolve) => setTimeout(resolve, 500))
-
-            setProgressStep(PROCESSING_STEPS[1])
-            await new Promise((resolve) => setTimeout(resolve, 300))
-
-            setProgressStep(PROCESSING_STEPS[2])
+            if (!isRegionRerun) {
+                setProgressStep(PROCESSING_STEPS[0])
+                await new Promise((resolve) => setTimeout(resolve, 500))
+                setProgressStep(PROCESSING_STEPS[1])
+                await new Promise((resolve) => setTimeout(resolve, 300))
+                setProgressStep(PROCESSING_STEPS[2])
+            }
             // Call the backend inference (orchestrator) — same path as the /analyze page
             const form = new FormData()
             form.append('image', selectedFile)
+            if (regionOverride !== undefined) form.append('region_override', regionOverride)
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'
             const resp = await fetch(`${backendUrl}/analyze`, { method: 'POST', body: form })
             const data: BackendAnalyzeApiResponse = await resp.json().catch(() => ({} as any))
@@ -192,10 +206,12 @@ function DashboardContent() {
 
             const okData = data as BackendAnalyzeResponse
 
-            setProgressStep(PROCESSING_STEPS[3])
-            await new Promise((resolve) => setTimeout(resolve, 200))
-            setProgressStep(PROCESSING_STEPS[4])
-            await new Promise((resolve) => setTimeout(resolve, 200))
+            if (!isRegionRerun) {
+                setProgressStep(PROCESSING_STEPS[3])
+                await new Promise((resolve) => setTimeout(resolve, 200))
+                setProgressStep(PROCESSING_STEPS[4])
+                await new Promise((resolve) => setTimeout(resolve, 200))
+            }
 
             const suggestions = Array.isArray(okData?.suggestions) ? okData.suggestions : []
             const analysisResult: AnalysisResult = {
@@ -211,6 +227,8 @@ function DashboardContent() {
                 recommendations: Array.isArray(okData?.recommendations) ? okData.recommendations : [],
                 recommendation_items: Array.isArray(okData?.recommendation_items) ? okData.recommendation_items : undefined,
                 suggestions,
+                region: okData?.region,
+                gates: okData?.gates,
                 notes: [
                     suggestions.length > 0
                         ? 'Analysis computed by backend models (beauty score, geometry diagnostics, and catalog suggestions).'
@@ -223,8 +241,10 @@ function DashboardContent() {
             setResult(analysisResult)
             setAnalysisStatus('success')
 
-            // Save to Firestore
-            if (user) {
+            // Save to Firestore. Skipped for an override re-run: changing the
+            // comparison group re-reads the same photo, it is not a new analysis, and
+            // saving each change would litter the profile with near-duplicates.
+            if (user && !isRegionRerun) {
                 try {
                     console.log('Saving analysis result for user:', user.uid)
                     const savedId = await saveAnalysisResult(user.uid, analysisResult)
@@ -274,6 +294,7 @@ function DashboardContent() {
             })
         } finally {
             setIsProcessing(false)
+            setRegionPending(false)
             setProgressStep(null)
         }
     }
@@ -339,6 +360,8 @@ function DashboardContent() {
                             result={result}
                             onAnalyzeAnother={handleAnalyzeAnother}
                             onDelete={handleDelete}
+                            onRegionChange={(region) => processAnalysis(region)}
+                            regionPending={regionPending}
                         />
                     </div>
                 </div>
