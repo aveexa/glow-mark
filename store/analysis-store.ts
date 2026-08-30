@@ -22,7 +22,9 @@ export const useAnalysisStore = create<AnalysisStore>((set) => ({
   error: null,
   errorHint: null,
 
-  setFile: (file) => set({ selectedFile: file }),
+  // Drop any previous result: it belongs to the previous photo, and leaving it in
+  // place lets a stale overlay be drawn over a newly selected image.
+  setFile: (file) => set({ selectedFile: file, result: null }),
   
   setPreviewUrl: (url) => {
     set((state) => {
@@ -40,7 +42,13 @@ export const useAnalysisStore = create<AnalysisStore>((set) => ({
 
   setResult: (result) => set({ result, error: null, errorHint: null }),
 
-  setError: (error, hint = null) => set({ error, errorHint: hint, analysisStatus: 'error' }),
+  // Clearing an error is not an error state. Forcing status to 'error' here meant
+  // every caller that did setError(null) before a request left the store claiming a
+  // failure that had not happened, which broke the render branches downstream.
+  setError: (error, hint = null) =>
+    set(error === null
+      ? { error: null, errorHint: null }
+      : { error, errorHint: hint, analysisStatus: 'error' }),
 
   clearAll: () => {
     set((state) => {

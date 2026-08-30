@@ -52,6 +52,9 @@ function DashboardContent() {
     } = useAnalysisStore()
     const [isProcessing, setIsProcessing] = useState(false)
     const [regionPending, setRegionPending] = useState(false)
+    // The comparison group currently in force, so a retry reproduces the same
+    // request rather than silently reverting to the inferred group. Session-only.
+    const [activeRegionOverride, setActiveRegionOverride] = useState<string | undefined>(undefined)
 
     useEffect(() => {
         if (user) {
@@ -117,6 +120,7 @@ function DashboardContent() {
     }
 
     const handleFileSelect = useCallback((file: File) => {
+        setActiveRegionOverride(undefined)
         setFile(file)
         const url = URL.createObjectURL(file)
         setPreviewUrl(url)
@@ -148,6 +152,10 @@ function DashboardContent() {
     const processAnalysis = async (regionOverride?: string) => {
         if (!selectedFile || !user) return
         const isRegionRerun = regionOverride !== undefined
+        // An explicit pick becomes the active group; anything else (first run,
+        // retry) reuses whatever is already in force.
+        const effectiveOverride = regionOverride ?? activeRegionOverride
+        if (isRegionRerun) setActiveRegionOverride(regionOverride)
 
         // A region re-run keeps the results on screen with an inline pending marker;
         // swapping to the progress view for what is a re-read of the same photo would
@@ -172,7 +180,7 @@ function DashboardContent() {
             // Call the backend inference (orchestrator) — same path as the /analyze page
             const form = new FormData()
             form.append('image', selectedFile)
-            if (regionOverride !== undefined) form.append('region_override', regionOverride)
+            if (effectiveOverride !== undefined) form.append('region_override', effectiveOverride)
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'
             const resp = await fetch(`${backendUrl}/analyze`, { method: 'POST', body: form })
             const data: BackendAnalyzeApiResponse = await resp.json().catch(() => ({} as any))
@@ -313,6 +321,7 @@ function DashboardContent() {
     }
 
     const handleAnalyzeAnother = () => {
+        setActiveRegionOverride(undefined)
         clearAll()
         setAnalysisStatus('idle')
     }
