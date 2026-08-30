@@ -680,7 +680,21 @@ def analyze_image_bytes(
         },
         "landmarks": landmarks,
         "overlayTypeHints": {"points": True, "outline": True, "mesh": False},
-        "ratios": [{"name": k, "value": float(feats[k]), "idealRange": ""} for k in reported_cols],
+        # typicalRange, not idealRange: these are population norms — where a value
+        # sits relative to what is common in the comparison group — and typical is
+        # not the same as ideal. null when the reference table has no cell for the
+        # feature, so the UI can omit the label rather than print an empty one.
+        "ratios": [
+            {
+                "name": k,
+                "value": float(feats[k]),
+                "typicalRange": (
+                    [region_norms[k]["p20"], region_norms[k]["p80"]]
+                    if k in region_norms else None
+                ),
+            }
+            for k in reported_cols
+        ],
         "recommendations": recommendations,
         "recommendation_items": feature_items,
         "suggestions": suggestions,

@@ -52,7 +52,9 @@ export interface AnalysisResult {
   ratios: Array<{
     name: string;
     value: number;
-    idealRange: string;
+    /** [p20, p80] for the comparison group — what is TYPICAL, not what is ideal.
+     *  null when the reference table has no cell for this feature. */
+    typicalRange: [number, number] | null;
   }>;
   /** Legacy Feature MLP non-ok strings (e.g. "nose_width_ratio: high"). */
   recommendations: string[];
@@ -84,7 +86,9 @@ export interface BackendAnalyzeResponse {
   ratios: Array<{
     name: string;
     value: number;
-    idealRange: string;
+    /** [p20, p80] for the comparison group — what is TYPICAL, not what is ideal.
+     *  null when the reference table has no cell for this feature. */
+    typicalRange: [number, number] | null;
   }>;
   recommendations: string[];
   recommendation_items?: RecommendationItem[];

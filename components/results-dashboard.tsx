@@ -403,9 +403,11 @@ export function ResultsDashboard({
                                 className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-accent shadow-[0_0_10px_rgba(255,215,0,0.5)]"
                               />
                             </div>
-                            <span className="text-xs text-muted-foreground font-medium min-w-[80px] text-right font-mono">
-                              IDL: {ratio.idealRange}
-                            </span>
+                            {ratio.typicalRange && (
+                              <span className="text-xs text-muted-foreground font-medium min-w-[120px] text-right font-mono">
+                                typical {ratio.typicalRange[0].toFixed(2)} – {ratio.typicalRange[1].toFixed(2)}
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}
