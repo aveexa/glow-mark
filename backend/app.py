@@ -8,6 +8,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from inference import analyze_image_bytes, AnalyzeError
+from suggestion_summary import ai_summary_enabled, set_ai_summary_enabled
 
 
 def _warmup_steps():
@@ -102,6 +103,19 @@ def create_app() -> Flask:
             return jsonify({"error": "UNKNOWN_ERROR", "details": str(e)}), 500
 
         return jsonify(result)
+
+    @app.get("/api/settings/summary")
+    def get_summary_setting():
+        """Read whether the AI summary is enabled. Drives the Settings toggle."""
+        return jsonify({"use_llm": ai_summary_enabled()}), 200
+
+    @app.post("/api/settings/summary")
+    def set_summary_setting():
+        """Persist the AI-summary switch. body: {"use_llm": bool}."""
+        body = request.get_json(silent=True) or {}
+        enabled = bool(body.get("use_llm"))
+        set_ai_summary_enabled(enabled)
+        return jsonify({"use_llm": enabled}), 200
 
     return app
 

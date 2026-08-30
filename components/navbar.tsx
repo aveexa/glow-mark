@@ -164,7 +164,7 @@ export function Navbar() {
                                                 Dashboard
                                             </button>
                                         </Link>
-                                        <Link href="/dashboard" onClick={() => setUserMenuOpen(false)}>
+                                        <Link href="/settings" onClick={() => setUserMenuOpen(false)}>
                                             <button className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-black/5 rounded-lg transition-colors flex items-center gap-2">
                                                 <Settings className="h-4 w-4" />
                                                 Settings
@@ -277,6 +277,12 @@ export function Navbar() {
                                 <Button variant="outline" className="w-full justify-center glass-panel border-black/5 h-12 text-base rounded-xl">
                                     <User className="mr-2 h-4 w-4" />
                                     Dashboard
+                                </Button>
+                            </Link>
+                            <Link href="/settings" className="w-full">
+                                <Button variant="outline" className="w-full justify-center glass-panel border-black/5 h-12 text-base rounded-xl">
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    Settings
                                 </Button>
                             </Link>
                             <Button

@@ -1,5 +1,7 @@
 flask>=3.0.0
 flask-cors>=4.0.0
+# Optional LLM summary (Groq) reads GROQ_API_KEY via python-dotenv from .env.
+python-dotenv>=1.0.0
 # Upper bound is load-bearing: mp.solutions was removed in 1.0, and a future
 # major could remove mp.tasks.vision the same way.
 mediapipe>=1.0,<2.0

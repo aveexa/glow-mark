@@ -306,6 +306,10 @@
       "eyeSquintRight": "Please relax your eyes"
     }
   },
+  "summary": {
+    "use_llm": false,
+    "_why": "Layer 2 (Groq) polish of the suggestion summary. The deterministic template in backend/suggestion_summary.py is the product and always works; the LLM path only nudges the wording when enabled here AND a GROQ_API_KEY env var is present. Defaults to off because every request would otherwise incur a billed model call (and may be rate-limited). Nothing sensitive is ever sent \u2014 only approved catalog text."
+  },
   "provenance": {
     "source": "data/interim/diagnose_gates.csv",
     "n_extracted": 2411,

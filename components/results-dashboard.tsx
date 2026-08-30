@@ -398,11 +398,17 @@ export function ResultsDashboard({
                       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[50px] rounded-full pointer-events-none" />
                       <div className="flex items-start gap-4 relative z-10">
                         <BadgeInfo className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-                        <p className="text-lg text-foreground leading-relaxed font-light">
-                          Your facial analysis shows a beautiful profile with excellent symmetry
-                          and proportional features. Our experts have mapped {result.landmarks.length} key points
-                          and calculated comprehensive metrics across multiple dimensions to generate this personalized profile.
-                        </p>
+                        {result.summary?.trim() ? (
+                          <p className="text-lg text-foreground leading-relaxed font-light">
+                            {result.summary}
+                          </p>
+                        ) : (
+                          <p className="text-lg text-foreground leading-relaxed font-light">
+                            Your facial analysis shows a beautiful profile with excellent symmetry
+                            and proportional features. Our experts have mapped {result.landmarks.length} key points
+                            and calculated comprehensive metrics across multiple dimensions to generate this personalized profile.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </TabsContent>

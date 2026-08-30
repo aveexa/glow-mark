@@ -48,7 +48,10 @@ from geometry import (
 )
 from region_stats import beauty_stats, mixture_stats
 from score_calibrate import calibrate_beauty_score, calibration_note
-from suggestion_summary import summarize_suggestions
+from suggestion_summary import (
+    ai_summary_enabled,
+    summarize_suggestions_with_llm,
+)
 from suggestion_serve import (
     RESPONSE_EXCLUDED_FEATURES,
     classes_from_thresholds,
@@ -721,11 +724,17 @@ def analyze_image_bytes(
             else "Suggestions: ranker checkpoint missing (feature strings only)"
         )
 
-    # Built from approved catalog text only, with no model in the path. Fail-soft
-    # for the same reason the ranker is: a missing paragraph is not worth an error.
-    try:
-        summary = summarize_suggestions(suggestions)
-    except Exception:  # noqa: BLE001
+    # The plain-language (AI) summary is opt-in via Settings. When off, no summary is
+    # returned at all ("ai summary not generated for analyses"); when on, it is built
+    # from approved catalog text and optionally polished by the LLM (Layer 2, Groq).
+    # Fail-soft for the same reason the ranker is: a missing or rejected paragraph is
+    # not worth an error, so when the feature is on the template always wins.
+    if ai_summary_enabled():
+        try:
+            summary = summarize_suggestions_with_llm(suggestions)
+        except Exception:  # noqa: BLE001
+            summary = ""
+    else:
         summary = ""
 
     sh, sw = img_for_score.shape[:2]
