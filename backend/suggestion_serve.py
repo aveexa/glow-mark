@@ -169,7 +169,18 @@ def predict_suggestions(
         # only a known excluded-feature row is dropped.
         if row.get("feature", "").strip() in RESPONSE_EXCLUDED_FEATURES:
             continue
-        out.append({"id": sid, "text": row.get("approved_text", ""), "confidence": round(conf, 4)})
+        # category, severity and trigger_class come from the catalog row already in
+        # hand. suggestion_summary groups on them; carrying them here avoids a second
+        # catalog lookup and keeps the grouping keyed to the same row that produced
+        # the text.
+        out.append({
+            "id": sid,
+            "text": row.get("approved_text", ""),
+            "confidence": round(conf, 4),
+            "category": row.get("category", "").strip(),
+            "severity": row.get("severity", "").strip(),
+            "trigger_class": row.get("trigger_class", "").strip(),
+        })
         if len(out) >= top_k:
             break
     return out

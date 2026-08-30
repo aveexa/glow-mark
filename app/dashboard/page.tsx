@@ -251,6 +251,7 @@ function DashboardContent() {
                 recommendations: Array.isArray(okData?.recommendations) ? okData.recommendations : [],
                 recommendation_items: Array.isArray(okData?.recommendation_items) ? okData.recommendation_items : undefined,
                 suggestions,
+                summary: typeof okData?.summary === 'string' ? okData.summary : undefined,
                 region: okData?.region,
                 gates: okData?.gates,
                 notes: [

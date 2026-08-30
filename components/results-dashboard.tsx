@@ -480,6 +480,15 @@ export function ResultsDashboard({
                   <TabsContent value="recommendations" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
                     <div className="space-y-8">
                       <div>
+                        {/* Summary of the tips below, built from the same approved
+                            catalog text. An addition, not a replacement — the
+                            individual tips stay visible underneath. Renders nothing
+                            at all when empty, rather than an empty container. */}
+                        {result.summary?.trim() && (
+                          <p className="mb-6 p-5 rounded-2xl border border-black/5 bg-black/[0.02] text-sm leading-relaxed text-foreground/90">
+                            {result.summary}
+                          </p>
+                        )}
                         <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-4">
                           Personalized tips
                         </h3>

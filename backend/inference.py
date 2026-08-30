@@ -48,6 +48,7 @@ from geometry import (
 )
 from region_stats import beauty_stats, mixture_stats
 from score_calibrate import calibrate_beauty_score, calibration_note
+from suggestion_summary import summarize_suggestions
 from suggestion_serve import (
     RESPONSE_EXCLUDED_FEATURES,
     classes_from_thresholds,
@@ -720,6 +721,13 @@ def analyze_image_bytes(
             else "Suggestions: ranker checkpoint missing (feature strings only)"
         )
 
+    # Built from approved catalog text only, with no model in the path. Fail-soft
+    # for the same reason the ranker is: a missing paragraph is not worth an error.
+    try:
+        summary = summarize_suggestions(suggestions)
+    except Exception:  # noqa: BLE001
+        summary = ""
+
     sh, sw = img_for_score.shape[:2]
     beauty_score = calibrate_beauty_score(beauty_for_display)
     notes = [
@@ -766,6 +774,7 @@ def analyze_image_bytes(
         "recommendations": recommendations,
         "recommendation_items": feature_items,
         "suggestions": suggestions,
+        "summary": summary,
         "region": _region_payload(region_weights, region_source),
         "gates": {
             "pose": {

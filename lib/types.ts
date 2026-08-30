@@ -11,6 +11,9 @@ export interface CatalogSuggestion {
   id: string;
   text: string;
   confidence: number;
+  category?: string;
+  severity?: string;
+  trigger_class?: string;
 }
 
 /** One selectable comparison group. `value` is the backend's internal region key. */
@@ -73,6 +76,8 @@ export interface AnalysisResult {
   recommendation_items?: RecommendationItem[];
   /** Catalog tips from suggestion ranker (Brain C). */
   suggestions?: CatalogSuggestion[];
+  /** One-paragraph plain-language summary of the suggestions above. */
+  summary?: string;
   /** Comparison group these measurements were scored against. */
   region?: RegionInfo;
   gates?: GateResults;
@@ -104,6 +109,9 @@ export interface BackendAnalyzeResponse {
   recommendations: string[];
   recommendation_items?: RecommendationItem[];
   suggestions?: CatalogSuggestion[];
+  /** One-paragraph plain-language summary of the suggestions, built from approved
+   *  catalog text. Empty string when there is nothing to summarise. */
+  summary?: string;
   region?: RegionInfo;
   gates?: GateResults;
   notes?: string[];
