@@ -3,8 +3,8 @@
 score = clip(SCALE * score_raw + BIAS, 0, 100)
 
 Env (optional):
-  BEAUTY_SCORE_SCALE  default 1.2
-  BEAUTY_SCORE_BIAS   default 15.0
+  BEAUTY_SCORE_SCALE  default 1.0
+  BEAUTY_SCORE_BIAS   default 10.0
 
 Set SCALE=1 and BIAS=0 to disable (identity after clip).
 """
@@ -18,13 +18,13 @@ from typing import Tuple
 def _read_calibration() -> Tuple[float, float]:
     """Helper: read SCALE/BIAS from env with safe defaults on bad values."""
     try:
-        scale = float(os.environ.get("BEAUTY_SCORE_SCALE", "1.2"))
+        scale = float(os.environ.get("BEAUTY_SCORE_SCALE", "1.0"))
     except ValueError:
-        scale = 1.2
+        scale = 1.0
     try:
-        bias = float(os.environ.get("BEAUTY_SCORE_BIAS", "15"))
+        bias = float(os.environ.get("BEAUTY_SCORE_BIAS", "10"))
     except ValueError:
-        bias = 15.0
+        bias = 10.0
     return scale, bias
 
 
