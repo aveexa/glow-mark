@@ -10,6 +10,31 @@ from flask_cors import CORS
 from inference import analyze_image_bytes, AnalyzeError
 
 
+def _warmup_steps():
+    """Every cached artifact the serve path needs, in load order.
+
+    Imported lazily so a failure here is reported by /health rather than preventing
+    the process from starting — a container that cannot answer the probe gives no
+    clue why, whereas a 503 naming the component does.
+    """
+    import gates
+    import inference
+    import region
+    import region_stats
+    import suggestion_serve
+
+    return (
+        ("gate_config", gates.load_gate_config),
+        ("face_landmarker", inference._face_landmarker),
+        ("beauty_model", inference._load_models),
+        ("clip_realness", gates._clip_bundle),
+        ("region_model", region._load_region_model),
+        ("region_reference_stats", region_stats.load_reference_stats),
+        ("suggestion_ranker", lambda: suggestion_serve.predict_suggestions(
+            {c: 0.5 for c in __import__("geometry").FEATURE_COLS}, top_k=1)),
+    )
+
+
 def create_app() -> Flask:
     """Factory: wire CORS + routes; returns the Flask app."""
     app = Flask(__name__)
@@ -17,8 +42,25 @@ def create_app() -> Flask:
 
     @app.get("/health")
     def health():
-        """Liveness probe for ops / load balancers."""
-        return jsonify({"ok": True})
+        """Readiness probe. Loads every model, so a startup probe warms them.
+
+        Each component is lru_cached, so this is expensive once and free afterwards.
+        Doing it here moves cold-start cost onto the probe instead of onto the first
+        real user, and turns a missing or corrupt artifact into a failed revision
+        rather than a 500 on someone's upload.
+        """
+        loaded, failed = [], {}
+        for name, load in _warmup_steps():
+            try:
+                load()
+                loaded.append(name)
+            except Exception as e:  # noqa: BLE001 — report, do not raise
+                failed[name] = str(e)[:200]
+
+        body = {"ok": not failed, "loaded": loaded}
+        if failed:
+            body["failed"] = failed
+        return jsonify(body), (200 if not failed else 503)
 
     @app.post("/analyze")
     def analyze():

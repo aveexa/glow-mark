@@ -1,0 +1,58 @@
+# gcloud falls back to .gitignore when this file is absent, and .gitignore excludes
+# backend/models/*.pt and datasets/. That would upload a source tree with no model
+# weights: the image builds, then every request fails on first use. This file exists
+# to stop that, so do not add backend/models/ or data/ here.
+
+.git/
+.gitignore
+
+# Local envs and build output
+venv/
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.next/
+out/
+
+# Frontend — the backend image does not need it
+app/
+components/
+contexts/
+hooks/
+lib/
+store/
+services/
+public/
+package.json
+package-lock.json
+next.config.js
+next-env.d.ts
+tsconfig.json
+tailwind.config.ts
+postcss.config.js
+.eslintrc.json
+
+# Training and analysis inputs, not serve inputs. datasets/ is tens of GB.
+datasets/
+notebooks/
+data/raw/
+data/processed/experiments/
+data/interim/realness_scores.csv
+data/interim/diagnose_gates.csv
+data/interim/sanity_*.csv
+data/interim/rejects.csv
+data/interim/geometry_features/
+data/processed/*.parquet
+
+# Superseded v1 pipeline — must not be deployed
+services/orchestrator/
+
+# Docs and scratch
+docs/
+resources/
+*.md
+!backend/**/*.md
+build-errors.txt
+next-build-errors.txt
+tsc-errors.txt
