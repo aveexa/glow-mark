@@ -344,9 +344,12 @@
           "max": 0.944
         }
       },
-      "previous_threshold": 0.3977,
-      "false_reject_at_previous": 0.0202,
-      "leak_at_previous": 0.6026,
+      "uncalibrated_baseline": {
+        "threshold": 0.6,
+        "false_reject": 0.0894,
+        "leak": 0.4231
+      },
+      "threshold_before_this_run": 0.3977,
       "false_reject_at_applied_fitted": 0.0202,
       "holdout_validation": {
         "seed": 20260829,

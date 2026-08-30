@@ -43,6 +43,11 @@ from inference import _detect_face, AnalyzeError
 
 VAL = REPO / "datasets" / "FairFace" / "val"
 TARGET_FALSE_REJECT = 0.02  # brief: under 2% false-reject on real photographs
+# The uncalibrated starting value this gate shipped with. Kept as a fixed
+# reference point: "previous_threshold" is whatever happened to be in the config
+# when a run started, so after one re-run it equals the applied value and the
+# record silently loses the comparison that justifies the change.
+UNCALIBRATED_BASELINE = 0.60
 PCTS_POS = (1, 5, 10, 25, 50)
 PCTS_NEG = (50, 75, 90, 99, 100)
 
@@ -308,9 +313,16 @@ def main() -> int:
                 "median": round(float(np.median(g)), 4), "max": round(float(g.max()), 4)}
             for k, (a, g) in neg_by_cat.items() if g.size
         },
-        "previous_threshold": cur,
-        "false_reject_at_previous": round(float((pos_gated < cur).mean()), 4),
-        "leak_at_previous": round(float((neg_gated >= cur).mean()), 4),
+        # Fixed reference: what the gate cost before it was ever calibrated, scored
+        # against the current measurement so it stays comparable to the applied row.
+        "uncalibrated_baseline": {
+            "threshold": UNCALIBRATED_BASELINE,
+            "false_reject": round(float((pos_gated < UNCALIBRATED_BASELINE).mean()), 4),
+            "leak": round(float((neg_gated >= UNCALIBRATED_BASELINE).mean()), 4),
+        },
+        # What was in the config when this run started; equals the applied value on
+        # a re-run, which is why it is not the record of the change.
+        "threshold_before_this_run": cur,
         "false_reject_at_applied_fitted": round(float((pos_gated < target).mean()), 4),
         "holdout_validation": hc,
         "leak_at_applied": round(float((neg_gated >= target).mean()), 4),
