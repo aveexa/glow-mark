@@ -246,6 +246,16 @@ def check_neutrality(
 
     Rejects on the first signal over its threshold, in config order.
     """
+    # Refuse a mapping that did not come from inference.gated_frame(). Reading the
+    # pre-rotation frame is silent and has produced wrong numbers three times; this
+    # turns that class of mistake into an exception at the point it happens.
+    if not getattr(blendshapes, "roll_corrected", False):
+        raise ValueError(
+            "check_neutrality requires blendshapes from inference.gated_frame(); got an "
+            "untagged mapping. Thresholds are calibrated on the roll-corrected pass-2 "
+            "frame, so scoring any other frame silently produces wrong verdicts."
+        )
+
     neutrality = load_gate_config()["neutrality"]
     messages = neutrality.get("messages", {})
 

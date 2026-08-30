@@ -28,8 +28,8 @@ import mediapipe as mp
 import numpy as np
 import pandas as pd
 
-from face_normalize import DEFAULT_OUTPUT_SIZE, square_face_crop
 from geometry import FEATURE_COLS, extract_geometry_features
+from inference import gated_frame
 
 TASK = BACKEND / "models" / "face_landmarker_v2_with_blendshapes.task"
 BASELINE = REPO / "data" / "interim" / "geometry_features" / "geometry_features.csv"
@@ -94,7 +94,6 @@ def main():
     lab["path"] = lab["file"].apply(lambda f: FF / f)
     lab = lab.head(n)
 
-    lmk = make_landmarker()
     recs = []
     n_nodetect = 0
 
@@ -104,28 +103,23 @@ def main():
         img = cv2.imread(str(row.path))
         if img is None:
             continue
-        d1 = detect(lmk, img)
-        if d1 is None:
+        # Same funnel as serve, including roll autocorrect. Extracting on the
+        # uncorrected frame is what made the first pass of these thresholds wrong.
+        try:
+            gf = gated_frame(img)
+        except Exception:
             n_nodetect += 1
             continue
-        cropped = square_face_crop(img, d1[0][:468], output_size=DEFAULT_OUTPUT_SIZE)
-        if cropped is None:
-            continue
-        d2 = detect(lmk, cropped[0])
-        if d2 is None:
-            n_nodetect += 1
-            continue
-        lm, bs, mat = d2
+        lm, bs = gf.detection.landmarks, gf.detection.blendshapes
         try:
             feats = extract_geometry_features(lm[:468])
         except Exception:
             continue
-        yaw, pitch, roll = euler_from_matrix(mat)
+        yaw, pitch, roll = gf.pose["yaw_deg"], gf.pose["pitch_deg"], gf.pose["roll_deg"]
         recs.append({**feats, **{k: bs.get(k, np.nan) for k in GATE_BS},
                      "race": row.race, "gender": row.gender,
                      "yaw": yaw, "pitch": pitch, "roll": roll})
 
-    lmk.close()
     df = pd.DataFrame(recs)
     print(f"\nextracted {len(df)} / {len(lab)}   (no face: {n_nodetect})\n")
 

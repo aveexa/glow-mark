@@ -64,10 +64,9 @@ def _extract(args: tuple[str, str, str]) -> dict | None:
     """Run one image through the serve funnel. Returns a feature row or None if gated out."""
     import torch
 
-    from face_normalize import DEFAULT_OUTPUT_SIZE, square_face_crop
-    from gates import autocorrect_roll, check_neutrality, check_pose
+    from gates import check_neutrality
     from geometry import extract_geometry_features
-    from inference import _beauty_features_from_68, _detect_face
+    from inference import _beauty_features_from_68, gated_frame
     from region_stats import BEAUTY_STAT
 
     path, race, gender = args
@@ -76,19 +75,10 @@ def _extract(args: tuple[str, str, str]) -> dict | None:
         if img is None:
             return None
 
-        det = _detect_face(img)                                   # pass 1: original
-        cropped = square_face_crop(img, det.landmarks[:468], output_size=DEFAULT_OUTPUT_SIZE)
-        if cropped is None:
+        gf = gated_frame(img)          # same funnel as serve, roll-corrected
+        if not gf.pose_ok:
             return None
-        det = _detect_face(cropped[0])                            # pass 2: square crop
-
-        passed, pose = check_pose(det.matrix)
-        if not passed:
-            return None
-
-        roll = float(pose["roll_correction_deg"])
-        if roll:
-            det = _detect_face(autocorrect_roll(cropped[0], roll))
+        det = gf.detection
 
         # Ground-truth region as a one-hot, so per-region thresholds apply exactly.
         neutral, _ = check_neutrality(det.blendshapes, {race: 1.0})

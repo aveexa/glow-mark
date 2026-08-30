@@ -242,6 +242,17 @@ def _decode_image(image_bytes: bytes) -> np.ndarray:
     return img
 
 
+class Blendshapes(Dict[str, float]):
+    """Blendshape scores, tagged with whether they came from the frame the gate judges.
+
+    A plain dict is indistinguishable from a correctly-derived one, and reading the
+    wrong frame is silent — it produced three separate rounds of wrong numbers before
+    this existed. check_neutrality refuses an untagged mapping rather than scoring it.
+    """
+
+    roll_corrected: bool = False
+
+
 class FaceDetection(NamedTuple):
     """One detected face as returned by the Tasks API.
 
@@ -268,7 +279,9 @@ def _unpack(result, index: int = 0) -> FaceDetection:
     if len(lm) < 468:
         raise AnalyzeError(code="FACE_TOO_ANGLED_OR_SMALL", http_status=400)
     norm = np.array([[p.x, p.y, p.z] for p in lm], dtype=np.float32)  # (478,3)
-    blendshapes = {c.category_name: float(c.score) for c in result.face_blendshapes[index]}
+    blendshapes = Blendshapes(
+        (c.category_name, float(c.score)) for c in result.face_blendshapes[index]
+    )
     matrix = np.array(
         result.facial_transformation_matrixes[index], dtype=np.float32
     ).reshape(4, 4)
@@ -522,6 +535,66 @@ def _beauty_features_from_68(
     return pts.reshape(1, -1).astype(np.float32)  # (1,136)
 
 
+class GatedFrame(NamedTuple):
+    """The frame the neutrality gate judges, plus everything derived alongside it."""
+
+    image: np.ndarray                      # pass-2 crop, rotated upright if needed
+    detection: FaceDetection               # detection ON that frame — gate-ready
+    pose: Dict[str, float]
+    pose_ok: bool
+    transform: object | None               # crop -> original, for overlays
+    pre_roll: FaceDetection                # pass 2 before rotation (overlay space)
+    normalize_note: str
+    roll_note: str
+
+
+def gated_frame(img_bgr: np.ndarray, *, retry_low_confidence: bool = False) -> GatedFrame:
+    """Run the serve funnel up to the neutrality gate: detect, crop, re-detect, derotate.
+
+    The single sanctioned way to obtain blendshapes for a threshold decision. Every
+    offline script must go through it, because a threshold computed on one frame and
+    applied on another is wrong in a way nothing reports.
+    """
+    det_orig = _detect_face(img_bgr, retry_low_confidence=retry_low_confidence)
+
+    normalize_note = "Face normalize: skipped (using original)"
+    transform = None
+    frame = img_bgr
+    try:
+        cropped = square_face_crop(img_bgr, det_orig.landmarks[:468], output_size=DEFAULT_OUTPUT_SIZE)
+        if cropped is not None:
+            frame, transform = cropped
+            det = _detect_face(frame)
+            normalize_note = f"Face normalize: square {DEFAULT_OUTPUT_SIZE}"
+        else:
+            det = det_orig
+    except Exception:  # noqa: BLE001 — never block analyze on normalize
+        det = det_orig
+        transform = None
+        frame = img_bgr
+        normalize_note = "Face normalize: skipped (error, using original)"
+
+    pose_ok, pose = check_pose(det.matrix)
+    pre_roll = det
+    roll_note = "Roll autocorrect: not needed"
+    correction = float(pose["roll_correction_deg"])
+    if pose_ok and correction:
+        try:
+            upright = autocorrect_roll(frame, correction)
+            det = _detect_face(upright)
+            frame = upright
+            roll_note = f"Roll autocorrect: rotated {-correction:.1f} deg"
+        except Exception:  # noqa: BLE001 — an uncorrected face still scores
+            roll_note = f"Roll autocorrect: skipped (redetect failed, roll={correction:.1f})"
+
+    # Mark the result gate-ready. This is the only place that does so.
+    det.blendshapes.roll_corrected = True
+    return GatedFrame(
+        image=frame, detection=det, pose=pose, pose_ok=pose_ok, transform=transform,
+        pre_roll=pre_roll, normalize_note=normalize_note, roll_note=roll_note,
+    )
+
+
 def analyze_image_bytes(
     image_bytes: bytes,
     region_override: str | None = None,
@@ -536,27 +609,12 @@ def analyze_image_bytes(
     img = _decode_image(image_bytes)
     h, w = img.shape[:2]
 
-    # 1. Pass 1: landmarks on original (also used for fail-soft crop bbox).
-    det_orig = _detect_face(img, retry_low_confidence=True)
-
-    normalize_note = "Face normalize: skipped (using original)"
-    transform = None
-    img_for_score = img
-    try:
-        cropped = square_face_crop(img, det_orig.landmarks[:468], output_size=DEFAULT_OUTPUT_SIZE)
-        if cropped is not None:
-            square_bgr, transform = cropped
-            # Pass 2: remesh on square crop for isotropic, stable framing.
-            # Blendshapes, pose matrix and geometry features all come from here.
-            det = _detect_face(square_bgr)
-            img_for_score = square_bgr
-            normalize_note = f"Face normalize: square {DEFAULT_OUTPUT_SIZE}"
-        else:
-            det = det_orig
-    except Exception:  # noqa: BLE001 — never block analyze on normalize (incl. pass-2 misses)
-        det = det_orig
-        transform = None
-        normalize_note = "Face normalize: skipped (error, using original)"
+    # 1-3. Detect, crop, re-detect, pose gate, derotate — one shared path, so an
+    #      offline script cannot accidentally score a different frame than serve.
+    gf = gated_frame(img, retry_low_confidence=True)
+    det, transform = gf.detection, gf.transform
+    overlay_det, img_for_score = gf.pre_roll, gf.image
+    normalize_note, roll_note, pose = gf.normalize_note, gf.roll_note, gf.pose
 
     # 2. Realness gate — runs on the upload, before any region inference happens,
     #    so non-photographic input never reaches a population model.
@@ -570,8 +628,7 @@ def analyze_image_bytes(
 
     # 3. Pose gate. Roll inside the limit is corrected by rotating the crop rather
     #    than rejected; the overlay keeps the pre-rotation landmarks.
-    pose_ok, pose = check_pose(det.matrix)
-    if not pose_ok:
+    if not gf.pose_ok:
         raise AnalyzeError(
             code="FACE_TOO_ANGLED_OR_SMALL",
             http_status=400,
@@ -580,18 +637,6 @@ def analyze_image_bytes(
                 f"pitch={pose['pitch_deg']:.1f}, roll={pose['roll_deg']:.1f}"
             ),
         )
-
-    overlay_det = det
-    roll_note = "Roll autocorrect: not needed"
-    roll_correction = float(pose["roll_correction_deg"])
-    if roll_correction:
-        try:
-            upright = autocorrect_roll(img_for_score, roll_correction)
-            det = _detect_face(upright)
-            img_for_score = upright
-            roll_note = f"Roll autocorrect: rotated {-roll_correction:.1f} deg"
-        except Exception:  # noqa: BLE001 — an uncorrected face still scores
-            roll_note = f"Roll autocorrect: skipped (redetect failed, roll={roll_correction:.1f})"
 
     norm468 = det.landmarks[:468]
 

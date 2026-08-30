@@ -25,8 +25,7 @@ import numpy as np
 import pandas as pd
 
 import inference as inf
-from face_normalize import DEFAULT_OUTPUT_SIZE, square_face_crop
-from gates import autocorrect_roll, check_neutrality, check_pose, check_realness
+from gates import check_neutrality, check_realness
 from region import predict_region_weights
 
 ROOT = REPO / "datasets" / "devset" / "images"
@@ -89,41 +88,20 @@ def evaluate(path: Path):
     except Exception as e:  # noqa: BLE001
         return "error", "realness", str(e)[:60]
 
+    # One shared funnel with serve; see inference.gated_frame.
     try:
-        det0 = inf._detect_face(img)
+        gf = inf.gated_frame(img)
     except Exception as e:  # noqa: BLE001
         msg = str(e)
-        gate = "no_face"
-        if "MULTIPLE" in msg.upper():
-            gate = "no_face"          # two-people case lands here too
-        return "fail", gate, msg[:60]
+        return "fail", "no_face", msg[:60]
 
-    crop = square_face_crop(img, det0.landmarks[:468],
-                            output_size=DEFAULT_OUTPUT_SIZE)
-    square = crop[0] if crop else img
-    try:
-        det = inf._detect_face(square)
-    except Exception as e:  # noqa: BLE001
-        return "fail", "no_face", str(e)[:60]
-
-    pose_ok, pose = check_pose(det.matrix)
-    if not pose_ok:
-        y, p = pose.get("yaw_deg", 0), pose.get("pitch_deg", 0)
+    if not gf.pose_ok:
+        y, p = gf.pose.get("yaw_deg", 0), gf.pose.get("pitch_deg", 0)
         return "fail", "pose", f"yaw={y:.1f} pitch={p:.1f}"
-
-    # Serve rotates the crop upright and re-detects before reading blendshapes or
-    # region weights. Without this the dev set scores a frame the pipeline never
-    # judges, and its numbers do not describe the deployed gate.
-    frame = square
-    if pose.get("roll_correction_deg"):
-        try:
-            frame = autocorrect_roll(square, pose["roll_correction_deg"])
-            det = inf._detect_face(frame)
-        except Exception:  # noqa: BLE001 — an uncorrected face still scores
-            frame = square
+    det = gf.detection
 
     try:
-        weights = predict_region_weights(frame)
+        weights = predict_region_weights(gf.image)
     except Exception:  # noqa: BLE001
         weights = None
 

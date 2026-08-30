@@ -160,16 +160,16 @@
       "jawOpen": 0.2568,
       "mouthSmileLeft": 0.7913,
       "mouthSmileRight": 0.8109,
-      "mouthFunnel": 0.1063839684426786,
-      "browInnerUp": 0.7576641166210181,
-      "browDownLeft": 0.7019658815860751,
-      "browDownRight": 0.700059417486191,
-      "browOuterUpLeft": 0.7540531432628633,
-      "browOuterUpRight": 0.6847563648223879,
+      "mouthFunnel": 0.10091415852308254,
+      "browInnerUp": 0.7595058345794675,
+      "browDownLeft": 0.6991464209556575,
+      "browDownRight": 0.6970647621154783,
+      "browOuterUpLeft": 0.7599755191802977,
+      "browOuterUpRight": 0.6840334725379943,
       "eyeBlinkLeft": 0.4798,
       "eyeBlinkRight": 0.3904,
-      "eyeSquintLeft": 0.787827244997025,
-      "eyeSquintRight": 0.7156831812858584
+      "eyeSquintLeft": 0.7785827279090879,
+      "eyeSquintRight": 0.7185199928283691
     },
     "per_region": {
       "jawOpen": {
@@ -200,58 +200,58 @@
         "White": 0.8109
       },
       "mouthFunnel": {
-        "Black": 0.25728326916694577,
-        "East Asian": 0.07901895150542255,
-        "Indian": 0.07033616095781321,
-        "Latino_Hispanic": 0.04507484644651406,
-        "Middle Eastern": 0.054537145793437936,
-        "Southeast Asian": 0.08574134811759009,
-        "White": 0.053034372702241026
+        "Black": 0.23645260095596288,
+        "East Asian": 0.07556736052036281,
+        "Indian": 0.08513332992792147,
+        "Latino_Hispanic": 0.04768112115561955,
+        "Middle Eastern": 0.05347258165478701,
+        "Southeast Asian": 0.08672963947057717,
+        "White": 0.04571730434894561
       },
       "browInnerUp": {
-        "Black": 0.7901161026954644,
-        "East Asian": 0.8080660128593444,
-        "Indian": 0.6620284461975098,
-        "Latino_Hispanic": 0.5879794800281524,
-        "Middle Eastern": 0.8722226667404175,
-        "Southeast Asian": 0.6479225826263428,
-        "White": 0.6793334615230563
+        "Black": 0.7713886475563048,
+        "East Asian": 0.8076355504989624,
+        "Indian": 0.6737094449996951,
+        "Latino_Hispanic": 0.6117226183414459,
+        "Middle Eastern": 0.8307469463348389,
+        "Southeast Asian": 0.6827081966400146,
+        "White": 0.7291404199600222
       },
       "browDownLeft": {
-        "Black": 0.6604794263839718,
-        "East Asian": 0.42420488834381104,
-        "Indian": 0.6880629396438599,
-        "Latino_Hispanic": 0.7188533258438109,
-        "Middle Eastern": 0.7642890000343323,
-        "Southeast Asian": 0.4963278520107272,
-        "White": 0.7598559021949769
+        "Black": 0.643626046180725,
+        "East Asian": 0.44915033042430863,
+        "Indian": 0.7040014374256135,
+        "Latino_Hispanic": 0.7280200719833374,
+        "Middle Eastern": 0.7608110904693604,
+        "Southeast Asian": 0.5065513706207274,
+        "White": 0.7378137397766114
       },
       "browDownRight": {
-        "Black": 0.6134668874740598,
-        "East Asian": 0.4052387201786041,
-        "Indian": 0.6823101913928987,
-        "Latino_Hispanic": 0.7506131219863889,
-        "Middle Eastern": 0.7329317855834961,
-        "Southeast Asian": 0.5137668490409854,
-        "White": 0.7657324981689454
+        "Black": 0.6023049592971796,
+        "East Asian": 0.4015982115268706,
+        "Indian": 0.6905754756927491,
+        "Latino_Hispanic": 0.7201999723911285,
+        "Middle Eastern": 0.7749029588699341,
+        "Southeast Asian": 0.5062343668937682,
+        "White": 0.7445881521701815
       },
       "browOuterUpLeft": {
-        "Black": 0.7817694330215446,
-        "East Asian": 0.7779340004920959,
-        "Indian": 0.6817590141296387,
-        "Latino_Hispanic": 0.7072499191761017,
-        "Middle Eastern": 0.8354486799240113,
-        "Southeast Asian": 0.6572048974037173,
-        "White": 0.7413026821613314
+        "Black": 0.8145429039001464,
+        "East Asian": 0.7413518023490906,
+        "Indian": 0.7107254147529604,
+        "Latino_Hispanic": 0.694260835647583,
+        "Middle Eastern": 0.784577956199646,
+        "Southeast Asian": 0.7053288221359251,
+        "White": 0.7862516033649448
       },
       "browOuterUpRight": {
-        "Black": 0.7260599136352537,
-        "East Asian": 0.6411004281044006,
-        "Indian": 0.6265248048305513,
-        "Latino_Hispanic": 0.598823490142822,
-        "Middle Eastern": 0.6884370231628418,
-        "Southeast Asian": 0.48657437264919307,
-        "White": 0.7377579081058504
+        "Black": 0.7258655977249143,
+        "East Asian": 0.5758143663406372,
+        "Indian": 0.6547138810157778,
+        "Latino_Hispanic": 0.6204460263252258,
+        "Middle Eastern": 0.7102412652969361,
+        "Southeast Asian": 0.5124553632736206,
+        "White": 0.7139525854587557
       },
       "eyeBlinkLeft": {
         "Black": 0.4798,
@@ -272,22 +272,22 @@
         "White": 0.3904
       },
       "eyeSquintLeft": {
-        "Black": 0.7043353843688964,
-        "East Asian": 0.7963939416408539,
-        "Indian": 0.7098687446117402,
-        "Latino_Hispanic": 0.7592712116241455,
-        "Middle Eastern": 0.8298242378234864,
-        "Southeast Asian": 0.7748609900474548,
-        "White": 0.8157433378696443
+        "Black": 0.712069480419159,
+        "East Asian": 0.7812924814224242,
+        "Indian": 0.7223098886013032,
+        "Latino_Hispanic": 0.765095442533493,
+        "Middle Eastern": 0.8372612905502319,
+        "Southeast Asian": 0.7752092862129212,
+        "White": 0.8150543451309206
       },
       "eyeSquintRight": {
-        "Black": 0.639951739311218,
-        "East Asian": 0.750414080619812,
-        "Indian": 0.6644867408275605,
-        "Latino_Hispanic": 0.6952076089382171,
-        "Middle Eastern": 0.7276787424087524,
-        "Southeast Asian": 0.7133452522754672,
-        "White": 0.7085112619400025
+        "Black": 0.6374150085449218,
+        "East Asian": 0.751651965379715,
+        "Indian": 0.6756104969978335,
+        "Latino_Hispanic": 0.6793024241924286,
+        "Middle Eastern": 0.7476393175125122,
+        "Southeast Asian": 0.729434094429016,
+        "White": 0.7149261713027955
       }
     },
     "messages": {
@@ -308,10 +308,10 @@
   },
   "provenance": {
     "source": "data/interim/diagnose_gates.csv",
-    "n_extracted": 2367,
-    "n_after_pose": 1668,
-    "global_spread_pts": 17.78,
-    "region_spread_pts": 12.89,
+    "n_extracted": 2411,
+    "n_after_pose": 1673,
+    "global_spread_pts": 19.29,
+    "region_spread_pts": 14.04,
     "realness_calibration": {
       "note": "The gate only sees images the landmark detector meshes, so 'reaching_gate' is the population that matters; everything else is already rejected as NO_FACE_DETECTED.",
       "known_limitation": "Photorealistic 3D-rendered faces pass this gate. They score inside the real-photograph distribution and are the negative most likely to be meshed. Measured across two independent generators (Microsoft FaceSynthetics and Unreal MetaHuman), so this is a property of the CLIP prompt set, not of one generator. Accepted deliberately: the leak is one category, while the cut that would exclude it rejects nearly every real photograph. Closing it needs a second discriminator, not a threshold.",
@@ -450,6 +450,17 @@
       "leak_at_applied_excluding_renders": 0.0312,
       "overlap_count": 47,
       "applied_threshold": 0.3977
+    },
+    "spread_region_conditioned_signals": {
+      "n_signals": 8,
+      "global_pts": 9.39,
+      "region_pts": 3.62,
+      "note": "The E7 claim. Signals whose cut is a per-region percentile."
+    },
+    "spread_fixed_cut_signals": {
+      "n_signals": 5,
+      "global_pts": 17.34,
+      "note": "Not a bias figure. These have one cut for every population by design; spread here is behavioural variation in the reference population that the gate is meant to catch, not to correct."
     }
   }
 }

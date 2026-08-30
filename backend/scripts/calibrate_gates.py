@@ -184,7 +184,15 @@ def main():
         print(f"{yaw:>6}{pitch:>7}{k:>8}{pct:>8.1f}%{mark}")
     if best is None:
         best = (25, 20)
-    yaw_lim, pitch_lim = best
+    # The sweep picks the first configuration clearing 70% yield. On the corrected
+    # frame 25/20 lands at 69.4% and the rule would jump to 30/25, loosening the pose
+    # gate as a side effect of re-extraction rather than as a decision. Pin the
+    # deployed limits; the sweep is still printed above so the trade is visible.
+    POSE_PINNED = (25, 20)
+    if best != POSE_PINNED:
+        print(f"\nNOTE: sweep would pick {best}; keeping deployed {POSE_PINNED}. "
+              f"Changing the pose gate is a separate decision.")
+    yaw_lim, pitch_lim = POSE_PINNED
     g = df[(df.yaw.abs() <= yaw_lim) & (df.pitch.abs() <= pitch_lim)].copy()
     print(f"\nusing |yaw|<={yaw_lim}, |pitch|<={pitch_lim}  ->  {len(g)} faces")
     print(f"pitch median: {df.pitch.median():.2f} deg  "
@@ -231,9 +239,41 @@ def main():
     cmp["delta"] = cmp["region_%"] - cmp["global_%"]
     print(cmp.to_string(float_format=lambda x: f"{x:8.1f}"))
     print(f"\noverall rejection: {100*rm.mean():.1f}%")
-    print(f"spread: {g_spread:.1f} pts (global)  ->  {r_spread:.1f} pts (region-relative)")
-    print(f"reduction: {g_spread - r_spread:.1f} pts "
-          f"({100*(g_spread-r_spread)/max(g_spread,1e-9):.0f}% less biased)")
+    print(f"spread (all signals): {g_spread:.1f} pts (global) -> {r_spread:.1f} pts (region-relative)")
+
+    # The all-signals figure conflates two different things and should not be the
+    # headline. Region conditioning exists to remove differences caused by the gate
+    # reading face MORPHOLOGY differently by population. The five gap-cut signals
+    # measure expression directly and get one fixed cut for everyone on purpose, so
+    # any spread they show is a real behavioural difference in the reference
+    # population — people in some groups smile more in FairFace — and correcting it
+    # is not the goal. Reported separately for that reason.
+    def spread_over(signals, thresholds):
+        m = pd.Series(False, index=g.index)
+        for s in signals:
+            t = thresholds[s]
+            m |= g[s] > (t if np.isscalar(t) else t.reindex(g.index).values)
+        rate = g.assign(rej=m).groupby("race")["rej"].mean() * 100
+        return rate.max() - rate.min(), 100 * m.mean()
+
+    conditioned = [s for s in SIGNALS if s not in GAP_CUTS and s in g]
+    fixed = [s for s in SIGNALS if s in GAP_CUTS and s in g]
+
+    cg, cgr = spread_over(conditioned, glob)
+    cr, crr = spread_over(conditioned, rmap)
+    fg, fgr = spread_over(fixed, glob)
+
+    print("\n  SPLIT — the claim is about the region-conditioned signals only")
+    print(f"  {len(conditioned)} region-conditioned (percentile) signals:")
+    print(f"      global {cg:.1f} pts -> region-relative {cr:.1f} pts  "
+          f"= {100*(cg-cr)/max(cg,1e-9):.0f}% reduction   [HEADLINE]")
+    print(f"      rejection rate {cgr:.1f}% -> {crr:.1f}%")
+    print(f"  {len(fixed)} fixed-cut (gap) signals — one cut for everyone by design:")
+    print(f"      spread {fg:.1f} pts, rejection {fgr:.1f}%")
+    print("      Not a bias figure: a fixed cut on a signal that measures expression")
+    print("      will differ by group wherever the groups genuinely differ.")
+    r_spread_conditioned = cr
+    g_spread_conditioned = cg
 
     print("\nper-region eyeSquintLeft threshold (morphology, not expression):")
     for reg, v in per["eyeSquintLeft"].items():
@@ -284,6 +324,21 @@ def main():
         "n_after_pose": int(len(g)),
         "global_spread_pts": round(float(g_spread), 2),
         "region_spread_pts": round(float(r_spread), 2),
+        "spread_region_conditioned_signals": {
+            "n_signals": len(conditioned),
+            "global_pts": round(float(g_spread_conditioned), 2),
+            "region_pts": round(float(r_spread_conditioned), 2),
+            "note": "The E7 claim. Signals whose cut is a per-region percentile.",
+        },
+        "spread_fixed_cut_signals": {
+            "n_signals": len(fixed),
+            "global_pts": round(float(fg), 2),
+            "note": (
+                "Not a bias figure. These have one cut for every population by "
+                "design; spread here is behavioural variation in the reference "
+                "population that the gate is meant to catch, not to correct."
+            ),
+        },
     })
     OUT.write_text(json.dumps(cfg, indent=2))
     print(f"\nwrote {OUT}")
