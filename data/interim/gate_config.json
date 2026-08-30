@@ -22,9 +22,6 @@
       "jawOpen": 0.96,
       "mouthSmileLeft": 0.97,
       "mouthSmileRight": 0.97,
-      "mouthPucker": 0.98,
-      "mouthPressLeft": 0.98,
-      "mouthPressRight": 0.98,
       "mouthFunnel": 0.98,
       "browInnerUp": 0.98,
       "browDownLeft": 0.98,
@@ -36,13 +33,30 @@
       "eyeSquintLeft": 0.98,
       "eyeSquintRight": 0.98
     },
+    "dropped_signals": {
+      "mouthPucker": {
+        "auc_active_vs_relaxed": 0.254,
+        "relaxed_max": 0.915,
+        "active_max": 0.014,
+        "why": "Inverted, not mistuned. AUC 0.254 is below chance: relaxed mouths score HIGHER than active ones, and 71% of relaxed images exceed the active group's median. A calm closed mouth reading 0.915 pucker is measuring lip shape, not pursing. No threshold on an inverted signal works."
+      },
+      "mouthPressLeft": {
+        "auc_active_vs_relaxed": 0.632,
+        "relaxed_max": 0.434,
+        "active_max": 0.165,
+        "why": "The relaxed maximum exceeds every active reading in the sample, so a calm mouth outscores a genuinely active one. Weak AUC and no usable tail."
+      },
+      "mouthPressRight": {
+        "auc_active_vs_relaxed": 0.798,
+        "relaxed_max": 0.408,
+        "active_max": 0.208,
+        "why": "Same tail failure as the left: relaxed max 0.408 above active max 0.208. The higher AUC is driven by the middle of the distribution, which a gate never uses \u2014 a gate operates at the tail. A left/right asymmetry on a paired anatomical signal is itself grounds to distrust both."
+      }
+    },
     "global": {
       "jawOpen": 0.27033932447433456,
       "mouthSmileLeft": 0.951815574169159,
       "mouthSmileRight": 0.9551560908555985,
-      "mouthPucker": 0.8842766976356509,
-      "mouthPressLeft": 0.3595989763736727,
-      "mouthPressRight": 0.39018644571304373,
       "mouthFunnel": 0.1063839684426786,
       "browInnerUp": 0.7576641166210181,
       "browDownLeft": 0.7019658815860751,
@@ -81,33 +95,6 @@
         "Middle Eastern": 0.9508743822574613,
         "Southeast Asian": 0.9354249131679534,
         "White": 0.9596646082401277
-      },
-      "mouthPucker": {
-        "Black": 0.7220646667480465,
-        "East Asian": 0.9362396168708801,
-        "Indian": 0.8365221226215366,
-        "Latino_Hispanic": 0.8941843843460082,
-        "Middle Eastern": 0.6898384213447571,
-        "Southeast Asian": 0.9282856833934786,
-        "White": 0.8262872791290286
-      },
-      "mouthPressLeft": {
-        "Black": 0.4245981681346881,
-        "East Asian": 0.2855141049623489,
-        "Indian": 0.3255175077915192,
-        "Latino_Hispanic": 0.4283218705654134,
-        "Middle Eastern": 0.4316373336315155,
-        "Southeast Asian": 0.27302776694297826,
-        "White": 0.3652560192346574
-      },
-      "mouthPressRight": {
-        "Black": 0.35466449260711663,
-        "East Asian": 0.27879972279071796,
-        "Indian": 0.3417683577537537,
-        "Latino_Hispanic": 0.4095742380619042,
-        "Middle Eastern": 0.42749189615249633,
-        "Southeast Asian": 0.30637192070484165,
-        "White": 0.4639646846055986
       },
       "mouthFunnel": {
         "Black": 0.25728326916694577,
@@ -204,9 +191,6 @@
       "jawOpen": "Please close your mouth",
       "mouthSmileLeft": "Please relax your mouth",
       "mouthSmileRight": "Please relax your mouth",
-      "mouthPucker": "Please relax your lips",
-      "mouthPressLeft": "Please relax your lips",
-      "mouthPressRight": "Please relax your lips",
       "mouthFunnel": "Please relax your lips",
       "browInnerUp": "Please relax your eyebrows",
       "browDownLeft": "Please relax your eyebrows",
@@ -223,8 +207,8 @@
     "source": "data/interim/diagnose_gates.csv",
     "n_extracted": 2367,
     "n_after_pose": 1668,
-    "global_spread_pts": 18.0,
-    "region_spread_pts": 6.34,
+    "global_spread_pts": 16.46,
+    "region_spread_pts": 5.7,
     "realness_calibration": {
       "note": "The gate only sees images the landmark detector meshes, so 'reaching_gate' is the population that matters; everything else is already rejected as NO_FACE_DETECTED.",
       "known_limitation": "Photorealistic 3D-rendered faces pass this gate. They score inside the real-photograph distribution and are the negative most likely to be meshed. Measured across two independent generators (Microsoft FaceSynthetics and Unreal MetaHuman), so this is a property of the CLIP prompt set, not of one generator. Accepted deliberately: the leak is one category, while the cut that would exclude it rejects nearly every real photograph. Closing it needs a second discriminator, not a threshold.",

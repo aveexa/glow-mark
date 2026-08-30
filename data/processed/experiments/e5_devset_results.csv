@@ -1,5 +1,5 @@
 folder,file,expected,expected_gate,verdict,gate,detail
-PASS,Black_1.jpg,pass,,fail,expression,Please relax your lips
+PASS,Black_1.jpg,pass,,pass,-,
 PASS,Black_2.avif,pass,,pass,-,
 PASS,Black_3.jpg,pass,,pass,-,
 PASS,East Asian_1.jpeg,pass,,pass,-,
@@ -26,7 +26,7 @@ PASS,frontal face portrait indoor light_1.avif,pass,,pass,-,
 PASS,frontal face portrait indoor light_2.webp,pass,,pass,-,
 PASS,frontal face portrait indoor light_3.jpg,pass,,pass,-,
 PASS,frontal face portrait indoor light_4.jpg,pass,,pass,-,
-PASS,frontal face portrait indoor light_5.webp,pass,,fail,expression,Please relax your lips
+PASS,frontal face portrait indoor light_5.webp,pass,,pass,-,
 PASS,frontal face portrait low light_1.jpg,pass,,pass,-,
 PASS,frontal face portrait low light_2.jpg,pass,,pass,-,
 PASS,frontal face portrait low light_3.0.jpg,pass,,pass,-,

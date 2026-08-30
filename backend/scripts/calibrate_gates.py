@@ -30,9 +30,6 @@ SIGNALS = {
     "jawOpen":          "Please close your mouth",
     "mouthSmileLeft":   "Please relax your mouth",
     "mouthSmileRight":  "Please relax your mouth",
-    "mouthPucker":      "Please relax your lips",
-    "mouthPressLeft":   "Please relax your lips",
-    "mouthPressRight":  "Please relax your lips",
     "mouthFunnel":      "Please relax your lips",
     "browInnerUp":      "Please relax your eyebrows",
     "browDownLeft":     "Please relax your eyebrows",
@@ -44,6 +41,57 @@ SIGNALS = {
     "eyeSquintLeft":    "Please relax your eyes",
     "eyeSquintRight":   "Please relax your eyes",
 }
+
+# Signals removed from the gate, with the measurement that removed them.
+#
+# Recorded here rather than recomputed: this script only sees FairFace, which has no
+# relaxed-vs-active labels. The figures come from
+# /tmp scratch analysis over datasets/devset (PASS set n=38 = relaxed closed mouths
+# by construction, FAIL smiling/laughing n=6 = genuinely active mouths), reading the
+# same frame the gate judges — pass 2, after roll autocorrect.
+#
+# The test each one failed: can a relaxed mouth read higher than an active one? For
+# all three the answer is yes, so the signal is reading mouth morphology rather than
+# mouth movement and no threshold on it can separate the two. This is the third such
+# finding, after the brow-raise signals and the CLIP realness prompts — a gate signal
+# is worth measuring for separation before it is worth calibrating.
+DROPPED_SIGNALS = {
+    "mouthPucker": {
+        "auc_active_vs_relaxed": 0.254,
+        "relaxed_max": 0.915,
+        "active_max": 0.014,
+        "why": (
+            "Inverted, not mistuned. AUC 0.254 is below chance: relaxed mouths score "
+            "HIGHER than active ones, and 71% of relaxed images exceed the active "
+            "group's median. A calm closed mouth reading 0.915 pucker is measuring "
+            "lip shape, not pursing. No threshold on an inverted signal works."
+        ),
+    },
+    "mouthPressLeft": {
+        "auc_active_vs_relaxed": 0.632,
+        "relaxed_max": 0.434,
+        "active_max": 0.165,
+        "why": (
+            "The relaxed maximum exceeds every active reading in the sample, so a calm "
+            "mouth outscores a genuinely active one. Weak AUC and no usable tail."
+        ),
+    },
+    "mouthPressRight": {
+        "auc_active_vs_relaxed": 0.798,
+        "relaxed_max": 0.408,
+        "active_max": 0.208,
+        "why": (
+            "Same tail failure as the left: relaxed max 0.408 above active max 0.208. "
+            "The higher AUC is driven by the middle of the distribution, which a gate "
+            "never uses — a gate operates at the tail. A left/right asymmetry on a "
+            "paired anatomical signal is itself grounds to distrust both."
+        ),
+    },
+}
+
+# Kept: mouthFunnel is the only mouth signal that separates in the right direction
+# (AUC 0.961, relaxed max 0.092 below active max 0.095). jawOpen and mouthSmile*
+# cover the mouth movements that actually displace the measured features.
 
 # per-signal percentile: how much of the reference population each cut admits.
 # jawOpen is stricter because an open mouth genuinely wrecks the jaw/lip features;
@@ -162,6 +210,7 @@ def main():
                    "roll_max_deg": 25.0, "roll_autocorrect": True}
     cfg["neutrality"] = {
         "percentiles": PCTL,
+        "dropped_signals": DROPPED_SIGNALS,
         "global": glob,
         "per_region": {s: {k: float(v) for k, v in per[s].items()} for s in per},
         "messages": SIGNALS,
