@@ -1,0 +1,87 @@
+PASS: 38 images
+  ...10/38
+  ...20/38
+  ...30/38
+FAIL: 53 images
+  ...10/53
+  ...20/53
+  ...30/53
+  ...40/53
+  ...50/53
+EDGE: 14 images
+  ...10/14
+
+====================================================================
+PASS SET  — the number that matters
+====================================================================
+  35/38 accepted  (92.1%)
+
+  wrongly rejected:
+    expression: 3
+      Black_1.jpg                       Please relax your lips
+      Indian_2.webp                     Please relax your eyebrows
+      frontal face portrait indoor light_5.webpPlease relax your lips
+
+  by group:
+                                     n  passed  rate_%
+group                                                 
+Black                                3       2    66.7
+East Asian                           2       2   100.0
+Indian                               2       1    50.0
+Latino Hispanic                      3       3   100.0
+Middle Eastern                       3       3   100.0
+Southeast Asian                      2       2   100.0
+White                                3       3   100.0
+frontal face portrait bright light   5       5   100.0
+frontal face portrait indoor light   5       4    80.0
+frontal face portrait low light      5       5   100.0
+frontal face portrait natural light  5       5   100.0
+
+====================================================================
+FAIL SET  — rejected, and by the right gate?
+====================================================================
+  43/53 rejected      (81.1%)
+  40/53 by the expected gate (75.5%)
+
+  by expected category:
+    expression   10/15 rejected, 10 by the right gate
+    no_face      4/5 rejected, 4 by the right gate
+    not_real     16/18 rejected, 16 by the right gate
+    pose         13/15 rejected, 10 by the right gate
+
+  LEAKED (should have been rejected):
+    3D character render_1.jpg
+    3D character render_2.jpg
+    person looking up portrait_7.webp
+    person looking up portrait_9.avif
+    person raised eyebrows portrait_7.webp
+    person raised eyebrows portrait_8.jpg
+    person raised eyebrows portrait_9.jpg
+    person smiling face portrait_3.jpg
+    person squinting eyes portrait_14.webp
+    very blurry face photo_2.jpg
+
+  rejected by a different gate than expected:
+    person head turned right portrait_4.jpg     pose -> no_face
+    person head turned right portrait_5.jpg     pose -> no_face
+    person looking down portrait_10.jpg         pose -> expression
+
+====================================================================
+EDGE SET  — no expected value, reported for judgement
+====================================================================
+  frontal face sunglasses portrait_1.jpg        PASS              
+  frontal face sunglasses portrait_2.webp       PASS              
+  frontal face sunglasses portrait_3.jpg        PASS              
+  slight head angle portrait_1.webp             PASS              
+  slight head angle portrait_2.jpg              PASS              
+  slight smile neutral portrait_1.jpg           PASS              
+  slight smile neutral portrait_2.png           PASS              
+  slight smile neutral portrait_3.jpg           PASS              
+  slight smile neutral portrait_4.png           PASS              
+  slightly raised eyebrows portrait_1.webp      FAIL (expression) Please relax your eyebrows
+  slightly raised eyebrows portrait_2.jpg       PASS              
+  slightly turned face portrait_1.jpg           FAIL (expression) Please relax your lips
+  slightly turned face portrait_2.jpg           FAIL (pose)       yaw=-7.4 pitch=6.1
+  slightly turned face portrait_3.jpg           PASS              
+
+wrote /home/tr3x/Projects/glow-mark/data/processed/experiments/e5_devset_results.csv
