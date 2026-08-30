@@ -53,48 +53,151 @@
         "why": "Same tail failure as the left: relaxed max 0.408 above active max 0.208. The higher AUC is driven by the middle of the distribution, which a gate never uses \u2014 a gate operates at the tail. A left/right asymmetry on a paired anatomical signal is itself grounds to distrust both."
       }
     },
+    "gap_cuts": {
+      "jawOpen": 0.2568,
+      "mouthSmileLeft": 0.7913,
+      "mouthSmileRight": 0.8109,
+      "eyeBlinkLeft": 0.4798,
+      "eyeBlinkRight": 0.3904
+    },
+    "gap_cut_evidence": {
+      "jawOpen": {
+        "cut": 0.2568,
+        "gap": 0.471,
+        "relaxed_max": 0.021,
+        "active_min": 0.492,
+        "active_n": 3,
+        "auc": 1.0,
+        "was_percentile": 0.27
+      },
+      "mouthSmileLeft": {
+        "cut": 0.7913,
+        "gap": 0.064,
+        "relaxed_max": 0.759,
+        "active_min": 0.823,
+        "active_n": 6,
+        "auc": 1.0,
+        "was_percentile": 0.952
+      },
+      "mouthSmileRight": {
+        "cut": 0.8109,
+        "gap": 0.1,
+        "relaxed_max": 0.761,
+        "active_min": 0.861,
+        "active_n": 6,
+        "auc": 1.0,
+        "was_percentile": 0.955
+      },
+      "eyeBlinkLeft": {
+        "cut": 0.4798,
+        "gap": 0.401,
+        "relaxed_max": 0.279,
+        "active_min": 0.681,
+        "active_n": 3,
+        "auc": 1.0,
+        "was_percentile": 0.642
+      },
+      "eyeBlinkRight": {
+        "cut": 0.3904,
+        "gap": 0.359,
+        "relaxed_max": 0.211,
+        "active_min": 0.57,
+        "active_n": 3,
+        "auc": 1.0,
+        "was_percentile": 0.62
+      }
+    },
+    "non_separating": {
+      "mouthFunnel": {
+        "auc": 0.961,
+        "relaxed_max": 0.092,
+        "active_min": 0.029
+      },
+      "browInnerUp": {
+        "auc": 0.667,
+        "relaxed_max": 0.482,
+        "active_min": 0.002
+      },
+      "browDownLeft": {
+        "auc": 0.895,
+        "relaxed_max": 0.724,
+        "active_min": 0.206
+      },
+      "browDownRight": {
+        "auc": 0.939,
+        "relaxed_max": 0.747,
+        "active_min": 0.187
+      },
+      "browOuterUpLeft": {
+        "auc": 0.965,
+        "relaxed_max": 0.714,
+        "active_min": 0.469
+      },
+      "browOuterUpRight": {
+        "auc": 0.456,
+        "relaxed_max": 0.504,
+        "active_min": 0.007
+      },
+      "eyeSquintLeft": {
+        "auc": 0.798,
+        "relaxed_max": 0.695,
+        "active_min": 0.339
+      },
+      "eyeSquintRight": {
+        "auc": 0.667,
+        "relaxed_max": 0.69,
+        "active_min": 0.083
+      }
+    },
+    "candidate_rejected": {
+      "mouthStretchRight": {
+        "auc": 0.895,
+        "relaxed_max": 0.567,
+        "active_min": 0.014
+      }
+    },
     "global": {
-      "jawOpen": 0.27033932447433456,
-      "mouthSmileLeft": 0.951815574169159,
-      "mouthSmileRight": 0.9551560908555985,
+      "jawOpen": 0.2568,
+      "mouthSmileLeft": 0.7913,
+      "mouthSmileRight": 0.8109,
       "mouthFunnel": 0.1063839684426786,
       "browInnerUp": 0.7576641166210181,
       "browDownLeft": 0.7019658815860751,
       "browDownRight": 0.700059417486191,
       "browOuterUpLeft": 0.7540531432628633,
       "browOuterUpRight": 0.6847563648223879,
-      "eyeBlinkLeft": 0.6418109476566315,
-      "eyeBlinkRight": 0.6203962957859042,
+      "eyeBlinkLeft": 0.4798,
+      "eyeBlinkRight": 0.3904,
       "eyeSquintLeft": 0.787827244997025,
       "eyeSquintRight": 0.7156831812858584
     },
     "per_region": {
       "jawOpen": {
-        "Black": 0.24675339519977563,
-        "East Asian": 0.265248634815216,
-        "Indian": 0.16226845264434808,
-        "Latino_Hispanic": 0.19562916934490168,
-        "Middle Eastern": 0.35808404207229616,
-        "Southeast Asian": 0.29512921214103677,
-        "White": 0.3555716800689696
+        "Black": 0.2568,
+        "East Asian": 0.2568,
+        "Indian": 0.2568,
+        "Latino_Hispanic": 0.2568,
+        "Middle Eastern": 0.2568,
+        "Southeast Asian": 0.2568,
+        "White": 0.2568
       },
       "mouthSmileLeft": {
-        "Black": 0.9603025448322298,
-        "East Asian": 0.8763209331035613,
-        "Indian": 0.9545843476057052,
-        "Latino_Hispanic": 0.9658720940351485,
-        "Middle Eastern": 0.950078661441803,
-        "Southeast Asian": 0.9287322962284087,
-        "White": 0.9507037127017975
+        "Black": 0.7913,
+        "East Asian": 0.7913,
+        "Indian": 0.7913,
+        "Latino_Hispanic": 0.7913,
+        "Middle Eastern": 0.7913,
+        "Southeast Asian": 0.7913,
+        "White": 0.7913
       },
       "mouthSmileRight": {
-        "Black": 0.9627010321617127,
-        "East Asian": 0.87512311398983,
-        "Indian": 0.9477429193258285,
-        "Latino_Hispanic": 0.9596393859386444,
-        "Middle Eastern": 0.9508743822574613,
-        "Southeast Asian": 0.9354249131679534,
-        "White": 0.9596646082401277
+        "Black": 0.8109,
+        "East Asian": 0.8109,
+        "Indian": 0.8109,
+        "Latino_Hispanic": 0.8109,
+        "Middle Eastern": 0.8109,
+        "Southeast Asian": 0.8109,
+        "White": 0.8109
       },
       "mouthFunnel": {
         "Black": 0.25728326916694577,
@@ -151,22 +254,22 @@
         "White": 0.7377579081058504
       },
       "eyeBlinkLeft": {
-        "Black": 0.6786826801300047,
-        "East Asian": 0.6796700572967529,
-        "Indian": 0.4426454156637191,
-        "Latino_Hispanic": 0.555979390144348,
-        "Middle Eastern": 0.6951518392562867,
-        "Southeast Asian": 0.6416802346706391,
-        "White": 0.6250863242149357
+        "Black": 0.4798,
+        "East Asian": 0.4798,
+        "Indian": 0.4798,
+        "Latino_Hispanic": 0.4798,
+        "Middle Eastern": 0.4798,
+        "Southeast Asian": 0.4798,
+        "White": 0.4798
       },
       "eyeBlinkRight": {
-        "Black": 0.6233926963806149,
-        "East Asian": 0.559752825498581,
-        "Indian": 0.43861938774585735,
-        "Latino_Hispanic": 0.5434742522239683,
-        "Middle Eastern": 0.6362344026565552,
-        "Southeast Asian": 0.6403506422042847,
-        "White": 0.5904908430576324
+        "Black": 0.3904,
+        "East Asian": 0.3904,
+        "Indian": 0.3904,
+        "Latino_Hispanic": 0.3904,
+        "Middle Eastern": 0.3904,
+        "Southeast Asian": 0.3904,
+        "White": 0.3904
       },
       "eyeSquintLeft": {
         "Black": 0.7043353843688964,
@@ -207,8 +310,8 @@
     "source": "data/interim/diagnose_gates.csv",
     "n_extracted": 2367,
     "n_after_pose": 1668,
-    "global_spread_pts": 16.46,
-    "region_spread_pts": 5.7,
+    "global_spread_pts": 17.78,
+    "region_spread_pts": 12.89,
     "realness_calibration": {
       "note": "The gate only sees images the landmark detector meshes, so 'reaching_gate' is the population that matters; everything else is already rejected as NO_FACE_DETECTED.",
       "known_limitation": "Photorealistic 3D-rendered faces pass this gate. They score inside the real-photograph distribution and are the negative most likely to be meshed. Measured across two independent generators (Microsoft FaceSynthetics and Unreal MetaHuman), so this is a property of the CLIP prompt set, not of one generator. Accepted deliberately: the leak is one category, while the cut that would exclude it rejects nearly every real photograph. Closing it needs a second discriminator, not a threshold.",

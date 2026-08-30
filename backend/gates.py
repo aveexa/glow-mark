@@ -213,6 +213,15 @@ def neutrality_threshold(
     neutrality = load_gate_config()["neutrality"]
     global_threshold = float(neutrality["global"][signal])
 
+    # A gap cut is a single value for every population, deliberately. It is derived
+    # from labelled active-vs-relaxed faces rather than from a percentile of the
+    # reference population, so there is no per-region morphology in it to blend.
+    # Region-relative thresholds exist because signals like eyeSquint read face
+    # shape; a signal that separates expression cleanly does not need them.
+    gap_cut = neutrality.get("gap_cuts", {}).get(signal)
+    if gap_cut is not None:
+        return float(gap_cut)
+
     if region_weights is None or neutrality_threshold_mode() == NEUTRALITY_THRESHOLD_MODE_GLOBAL:
         return global_threshold
 

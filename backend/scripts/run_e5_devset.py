@@ -26,7 +26,7 @@ import pandas as pd
 
 import inference as inf
 from face_normalize import DEFAULT_OUTPUT_SIZE, square_face_crop
-from gates import check_neutrality, check_pose, check_realness
+from gates import autocorrect_roll, check_neutrality, check_pose, check_realness
 from region import predict_region_weights
 
 ROOT = REPO / "datasets" / "devset" / "images"
@@ -111,8 +111,19 @@ def evaluate(path: Path):
         y, p = pose.get("yaw_deg", 0), pose.get("pitch_deg", 0)
         return "fail", "pose", f"yaw={y:.1f} pitch={p:.1f}"
 
+    # Serve rotates the crop upright and re-detects before reading blendshapes or
+    # region weights. Without this the dev set scores a frame the pipeline never
+    # judges, and its numbers do not describe the deployed gate.
+    frame = square
+    if pose.get("roll_correction_deg"):
+        try:
+            frame = autocorrect_roll(square, pose["roll_correction_deg"])
+            det = inf._detect_face(frame)
+        except Exception:  # noqa: BLE001 — an uncorrected face still scores
+            frame = square
+
     try:
-        weights = predict_region_weights(square)
+        weights = predict_region_weights(frame)
     except Exception:  # noqa: BLE001
         weights = None
 

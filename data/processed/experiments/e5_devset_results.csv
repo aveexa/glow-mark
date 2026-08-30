@@ -37,7 +37,7 @@ PASS,frontal face portrait natural light_2.0.jpg,pass,,pass,-,
 PASS,frontal face portrait natural light_3.jpg,pass,,pass,-,
 PASS,frontal face portrait natural light_4.jpg,pass,,pass,-,
 PASS,frontal face portrait natural light_5.jpg,pass,,pass,-,
-FAIL,3D character render_1.jpg,fail,not_real,pass,-,
+FAIL,3D character render_1.jpg,fail,not_real,fail,expression,Please relax your mouth
 FAIL,3D character render_2.jpg,fail,not_real,pass,-,
 FAIL,anime face_1.avif,fail,not_real,fail,not_real,p_photo=0.033
 FAIL,anime face_2.jpg,fail,not_real,fail,not_real,p_photo=0.043
@@ -71,21 +71,21 @@ FAIL,person head turned right portrait_6.jpg,fail,pose,fail,pose,yaw=-35.1 pitch
 FAIL,person laughing open mouth portrait_4.webp,fail,expression,fail,expression,Please close your mouth
 FAIL,person laughing open mouth portrait_5.jpg,fail,expression,fail,expression,Please close your mouth
 FAIL,person laughing open mouth portrait_6.jpg,fail,expression,fail,expression,Please close your mouth
-FAIL,person looking down portrait_10.jpg,fail,pose,fail,expression,Please keep your eyes open
+FAIL,person looking down portrait_10.jpg,fail,pose,fail,expression,Please relax your mouth
 FAIL,person looking down portrait_11.jpg,fail,pose,fail,pose,yaw=4.6 pitch=28.4
 FAIL,person looking down portrait_12.jpg,fail,pose,fail,pose,yaw=-1.2 pitch=32.6
 FAIL,person looking up portrait_7.webp,fail,pose,pass,-,
 FAIL,person looking up portrait_8.jpg,fail,pose,fail,pose,yaw=-0.6 pitch=-22.9
 FAIL,person looking up portrait_9.avif,fail,pose,pass,-,
 FAIL,person raised eyebrows portrait_7.webp,fail,expression,pass,-,
-FAIL,person raised eyebrows portrait_8.jpg,fail,expression,pass,-,
+FAIL,person raised eyebrows portrait_8.jpg,fail,expression,fail,expression,Please relax your eyebrows
 FAIL,person raised eyebrows portrait_9.jpg,fail,expression,pass,-,
 FAIL,person smiling face portrait_1.avif,fail,expression,fail,expression,Please relax your mouth
 FAIL,person smiling face portrait_2.webp,fail,expression,fail,expression,Please relax your mouth
-FAIL,person smiling face portrait_3.jpg,fail,expression,pass,-,
+FAIL,person smiling face portrait_3.jpg,fail,expression,fail,expression,Please relax your mouth
 FAIL,person squinting eyes portrait_13.jpg,fail,expression,fail,expression,Please relax your eyebrows
 FAIL,person squinting eyes portrait_14.webp,fail,expression,pass,-,
-FAIL,person squinting eyes portrait_15.jpg,fail,expression,fail,expression,Please relax your eyes
+FAIL,person squinting eyes portrait_15.jpg,fail,expression,fail,expression,Please keep your eyes open
 FAIL,two people portrait_1.jpg,fail,no_face,fail,no_face,
 FAIL,two people portrait_2.jpg,fail,no_face,fail,no_face,
 FAIL,very blurry face photo_1.jpg,fail,no_face,fail,no_face,
@@ -97,10 +97,10 @@ EDGE,slight head angle portrait_1.webp,edge,,pass,-,
 EDGE,slight head angle portrait_2.jpg,edge,,pass,-,
 EDGE,slight smile neutral portrait_1.jpg,edge,,pass,-,
 EDGE,slight smile neutral portrait_2.png,edge,,pass,-,
-EDGE,slight smile neutral portrait_3.jpg,edge,,pass,-,
+EDGE,slight smile neutral portrait_3.jpg,edge,,fail,expression,Please relax your mouth
 EDGE,slight smile neutral portrait_4.png,edge,,pass,-,
 EDGE,slightly raised eyebrows portrait_1.webp,edge,,fail,expression,Please relax your eyebrows
 EDGE,slightly raised eyebrows portrait_2.jpg,edge,,pass,-,
-EDGE,slightly turned face portrait_1.jpg,edge,,fail,expression,Please relax your lips
+EDGE,slightly turned face portrait_1.jpg,edge,,pass,-,
 EDGE,slightly turned face portrait_2.jpg,edge,,fail,pose,yaw=-7.4 pitch=6.1
 EDGE,slightly turned face portrait_3.jpg,edge,,pass,-,
