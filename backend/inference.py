@@ -455,18 +455,32 @@ def _resolve_region(
 
 
 def _region_payload(weights: Dict[str, float] | None, source: str) -> Dict[str, Any]:
-    """Helper: the response's region block, including its user-facing label."""
-    try:
-        from region import reference_label
-        label = reference_label(weights)
-    except Exception:  # noqa: BLE001 — a label is not worth failing a response over
-        label = None
-    return {
+    """Helper: the response's region block, including everything the picker needs.
+
+    ``choices`` and ``selected`` ship with the response so the client never keeps its
+    own copy of the group list, the display labels, or the rule for which one is
+    selected. region.py owns all three; a duplicated constant with no owner is one
+    that eventually diverges.
+    """
+    payload: Dict[str, Any] = {
         "weights": weights,
-        "reference_label": label,
+        "reference_label": None,
         "source": source,
         "overridable": True,
+        "choices": [],
+        "selected": None,
     }
+    try:
+        from region import GLOBAL_REGION, reference_label, region_choices
+
+        payload["reference_label"] = reference_label(weights)
+        payload["choices"] = region_choices()
+        payload["selected"] = (
+            max(weights, key=weights.__getitem__) if weights else GLOBAL_REGION
+        )
+    except Exception:  # noqa: BLE001 — labelling is not worth failing a response over
+        pass
+    return payload
 
 
 # SCUT-FBP5500 / beauty checkpoint training canvas (square).

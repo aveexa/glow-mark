@@ -40,26 +40,3 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   [ERROR_CODES.TIMEOUT]: 'Processing timed out. Please try again.',
   [ERROR_CODES.UNKNOWN_ERROR]: 'An unexpected error occurred. Please try again.',
 };
-
-/** Comparison groups the user can pick from.
- *
- *  `value` is the backend's internal region key (see backend/region.py REGION_NAMES)
- *  and must match it exactly; `label` is display-only. An unrecognised value is
- *  ignored by the backend rather than erroring, so a stale client degrades to
- *  inferred rather than breaking.
- *
- *  These name a reference population to compare measurements against. They are not
- *  a claim about who the user is.
- */
-export const GLOBAL_COMPARISON_GROUP = 'global';
-
-export const COMPARISON_GROUPS: ReadonlyArray<{ value: string; label: string }> = [
-  { value: 'White', label: 'European' },
-  { value: 'Black', label: 'African' },
-  { value: 'Latino_Hispanic', label: 'Latino / Hispanic' },
-  { value: 'East Asian', label: 'East Asian' },
-  { value: 'Southeast Asian', label: 'Southeast Asian' },
-  { value: 'Indian', label: 'South Asian' },
-  { value: 'Middle Eastern', label: 'Middle Eastern' },
-  { value: GLOBAL_COMPARISON_GROUP, label: 'All (global)' },
-];

@@ -13,6 +13,12 @@ export interface CatalogSuggestion {
   confidence: number;
 }
 
+/** One selectable comparison group. `value` is the backend's internal region key. */
+export interface RegionChoice {
+  value: string;
+  label: string;
+}
+
 /** Which comparison group the measurements were scored against.
  *  A reference population, never an identity claim about the user. */
 export interface RegionInfo {
@@ -22,6 +28,10 @@ export interface RegionInfo {
   reference_label: string | null;
   source: 'inferred' | 'user_override' | 'global_fallback';
   overridable: boolean;
+  /** The pickable groups, owned by backend/region.py so no client copy can drift. */
+  choices: RegionChoice[];
+  /** Which choice the picker should show as selected. */
+  selected: string | null;
 }
 
 /** Gate readings for this request, surfaced for display and debugging. */
@@ -53,8 +63,9 @@ export interface AnalysisResult {
     name: string;
     value: number;
     /** [p20, p80] for the comparison group — what is TYPICAL, not what is ideal.
-     *  null when the reference table has no cell for this feature. */
-    typicalRange: [number, number] | null;
+     *  null when the reference table has no cell for this feature, and absent
+     *  entirely on analyses stored before the field existed. */
+    typicalRange?: [number, number] | null;
   }>;
   /** Legacy Feature MLP non-ok strings (e.g. "nose_width_ratio: high"). */
   recommendations: string[];

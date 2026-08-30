@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AnalysisResult } from '@/lib/types'
-import { COMPARISON_GROUPS, GLOBAL_COMPARISON_GROUP } from '@/lib/constants'
 import { useAnalysisStore } from '@/store/analysis-store'
 import { Eye, EyeOff, Trash2, Upload, Sparkles, Activity, ShieldAlert, BadgeInfo } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -67,14 +66,13 @@ export function ResultsDashboard({
   const { previewUrl } = useAnalysisStore()
   const [showOverlay, setShowOverlay] = useState(true)
 
-  // Which option the dropdown shows. The response carries a mixture, not a single
-  // group, so pick the heaviest one; a fail-open (null weights) shows "All (global)".
-  const selectedGroup = (() => {
-    const w = result.region?.weights
-    if (!w) return GLOBAL_COMPARISON_GROUP
-    const top = Object.entries(w).sort((a, b) => b[1] - a[1])[0]
-    return top ? top[0] : GLOBAL_COMPARISON_GROUP
-  })()
+  // The group list, its labels, and which one is selected all come from the
+  // response. Nothing here mirrors backend/region.py, so nothing here can drift
+  // from it. Analyses loaded from storage carry no region block, so the picker is
+  // absent for them — which is right: their source photo is not stored either, so
+  // there is nothing to re-analyse.
+  const region = result.region
+  const regionChoices = region?.choices ?? []
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
 
@@ -410,7 +408,7 @@ export function ResultsDashboard({
                   </TabsContent>
 
                   <TabsContent value="ratios" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-                    {result.region && (
+                    {region && regionChoices.length > 0 && (
                       <div className="mb-6 p-4 rounded-2xl border border-black/5 bg-black/[0.02]">
                         <div className="flex flex-wrap items-center gap-3">
                           <label
@@ -422,11 +420,11 @@ export function ResultsDashboard({
                           <select
                             id="comparison-group"
                             className="text-sm font-medium rounded-lg border border-black/10 bg-background px-3 py-1.5 disabled:opacity-60"
-                            value={selectedGroup}
+                            value={region.selected ?? ''}
                             disabled={!onRegionChange || regionPending}
                             onChange={(e) => onRegionChange?.(e.target.value)}
                           >
-                            {COMPARISON_GROUPS.map((g) => (
+                            {regionChoices.map((g) => (
                               <option key={g.value} value={g.value}>
                                 {g.label}
                               </option>
@@ -437,7 +435,7 @@ export function ResultsDashboard({
                           )}
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                          {result.region.source === 'global_fallback'
+                          {region.source === 'global_fallback'
                             ? 'We could not estimate a group for this photo, so your measurements are compared against everyone. You can change it.'
                             : 'We estimate this to compare your measurements against a relevant population. You can change it.'}
                         </p>
