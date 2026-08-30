@@ -6,7 +6,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useAuth } from "@/contexts/auth-context"
-import { getUserAnalyses, getUserAverageMetrics, AnalysisRecord, saveAnalysisResult } from "@/lib/firebase/analysis"
+import { getUserAnalyses, AnalysisRecord, saveAnalysisResult } from "@/lib/firebase/analysis"
 import { useEffect, useState, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useAnalysisStore } from "@/store/analysis-store"
@@ -81,11 +81,31 @@ function DashboardContent() {
         
         setLoading(true)
         try {
-            const [userAnalyses, metrics] = await Promise.all([
-                getUserAnalyses(user.uid),
-                getUserAverageMetrics(user.uid)
-            ])
-            
+            // Fetch the user's analyses once and derive the averages client-side.
+            // Computing them from the same list avoids getUserAverageMetrics, which
+            // re-queries the entire analyses collection — doubling the Firestore
+            // reads, transfer and latency on every dashboard load.
+            const userAnalyses = await getUserAnalyses(user.uid)
+
+            const count = userAnalyses.length
+            const sums = userAnalyses.reduce(
+                (acc, a) => {
+                    acc.score += a.result.score || 0
+                    acc.symmetry += a.result.metrics?.symmetry || 0
+                    acc.proportions += a.result.metrics?.proportions || 0
+                    acc.balance += a.result.metrics?.balance || 0
+                    return acc
+                },
+                { score: 0, symmetry: 0, proportions: 0, balance: 0 }
+            )
+            const metrics = {
+                averageScore: count ? Math.round(sums.score / count) : 0,
+                averageSymmetry: count ? Math.round(sums.symmetry / count) : 0,
+                averageProportions: count ? Math.round(sums.proportions / count) : 0,
+                averageBalance: count ? Math.round(sums.balance / count) : 0,
+                totalAnalyses: count,
+            }
+
             setAnalyses(userAnalyses)
             setAverageMetrics(metrics)
         } catch (error) {
@@ -122,6 +142,8 @@ function DashboardContent() {
     const handleStartAnalysis = () => {
         setShowAnalysis(true)
         clearAll()
+        setIsProcessing(false)
+        setRegionPending(false)
     }
 
     const handleFileSelect = useCallback((file: File) => {
@@ -273,6 +295,13 @@ function DashboardContent() {
 
             setResult(analysisResult)
             setAnalysisStatus('success')
+            // The results are on screen now; the inference phase is over. Clearing
+            // the flag here (not just in `finally`) matters because the Firestore
+            // save below is awaited and can linger/block, and while it does `finally`
+            // has not run. If we left isProcessing true here, clicking "New
+            // Evaluation" would drop through to the processing screen (there was no
+            // new analysis, just a stale flag) instead of the upload screen.
+            setIsProcessing(false)
 
             // Save to Firestore. Skipped for an override re-run: changing the
             // comparison group re-reads the same photo, it is not a new analysis, and
@@ -350,11 +379,15 @@ function DashboardContent() {
         setInferredRegion(null)
         clearAll()
         setAnalysisStatus('idle')
+        setIsProcessing(false)
+        setRegionPending(false)
     }
 
     const handleDelete = () => {
         clearAll()
         setShowAnalysis(false)
+        setIsProcessing(false)
+        setRegionPending(false)
         loadAnalyses()
     }
 

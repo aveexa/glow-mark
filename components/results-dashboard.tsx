@@ -64,7 +64,7 @@ export function ResultsDashboard({
   regionPending = false,
 }: ResultsDashboardProps) {
   const { previewUrl } = useAnalysisStore()
-  const [showOverlay, setShowOverlay] = useState(true)
+  const [showOverlay, setShowOverlay] = useState(false)
 
   // The group list, its labels, and which one is selected all come from the
   // response. Nothing here mirrors backend/region.py, so nothing here can drift
@@ -216,7 +216,7 @@ export function ResultsDashboard({
             >
               {score}
             </motion.div>
-            <div className="text-sm font-medium text-muted-foreground mt-1 uppercase tracking-widest">Aesthetic Score</div>
+            {/* <div className="text-sm font-medium text-muted-foreground mt-1 uppercase tracking-widest">Aesthetic Score</div> */}
           </div>
         </div>
       </div>
@@ -330,7 +330,7 @@ export function ResultsDashboard({
                       normalising it reduced agreement with human ratings). Say so,
                       so the two numbers are not read as the same kind of thing. */}
                   <p className="mt-4 text-center text-xs text-muted-foreground">
-                    Not adjusted for comparison group.
+                    Global Aesthetic Score
                   </p>
                 </CardContent>
               </Card>
