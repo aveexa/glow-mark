@@ -63,6 +63,21 @@ def load_gate_config() -> Dict[str, Any]:
         return json.load(f)
 
 
+def detection_confidences() -> Tuple[float, float]:
+    """``(primary, retry)`` face-detection confidences.
+
+    The retry exists to tell two failures apart. A face the detector misses outright
+    and a face it sees only faintly are different problems for the user, but both
+    used to surface as NO_FACE_DETECTED — which asks someone to put a face in a frame
+    that already has one.
+    """
+    detection = load_gate_config().get("detection", {})
+    return (
+        float(detection.get("min_face_confidence", 0.5)),
+        float(detection.get("retry_min_face_confidence", 0.25)),
+    )
+
+
 def beauty_region_normalize() -> bool:
     """Whether the beauty score is z-normalised against the user's region.
 

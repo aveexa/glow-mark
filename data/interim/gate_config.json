@@ -1,4 +1,9 @@
 {
+  "detection": {
+    "min_face_confidence": 0.5,
+    "retry_min_face_confidence": 0.25,
+    "_why": "A miss at the primary confidence is retried once at retry_min_face_confidence. A face found only on the retry is real but marginal \u2014 usually turned away, sometimes small or blurred \u2014 so it is reported as FACE_TOO_ANGLED_OR_SMALL rather than NO_FACE_DETECTED, which told the user to add a face that was already in frame. The retry runs on the serve path only; offline builds keep the single pass, since a second detection on every miss is most of the cost of a run that rejects 60% of its input."
+  },
   "pose": {
     "yaw_max_deg": 25,
     "pitch_max_deg": 20,

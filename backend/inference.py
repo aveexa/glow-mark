@@ -34,6 +34,7 @@ from gates import (
     NEUTRALITY_THRESHOLD_MODE_REGION,
     autocorrect_roll,
     beauty_region_normalize,
+    detection_confidences,
     check_neutrality,
     check_pose,
     check_realness,
@@ -205,9 +206,9 @@ def _load_models():
 _TASK_PATH = _MODELS_DIR / "face_landmarker_v2_with_blendshapes.task"
 
 
-@lru_cache(maxsize=1)
-def _face_landmarker():
-    """Helper: cached MediaPipe FaceLandmarker (Tasks API) for static single-image detection.
+@lru_cache(maxsize=2)
+def _build_landmarker(min_confidence: float):
+    """Helper: cached MediaPipe FaceLandmarker (Tasks API) at one confidence.
 
     ``num_faces=2`` is deliberate: it is what lets MULTIPLE_FACES_DETECTED fire
     instead of the detector silently picking one face.
@@ -218,9 +219,18 @@ def _face_landmarker():
         num_faces=2,
         output_face_blendshapes=True,
         output_facial_transformation_matrixes=True,
-        min_face_detection_confidence=0.5,
+        min_face_detection_confidence=min_confidence,
     )
     return mp.tasks.vision.FaceLandmarker.create_from_options(options)
+
+
+def _face_landmarker(min_confidence: float | None = None):
+    """Helper: the landmarker at the configured primary confidence, or a given one.
+
+    Two instances at most — the primary and the retry — each cached for the process.
+    """
+    primary, _retry = detection_confidences()
+    return _build_landmarker(float(primary if min_confidence is None else min_confidence))
 
 
 def _decode_image(image_bytes: bytes) -> np.ndarray:
@@ -244,26 +254,94 @@ class FaceDetection(NamedTuple):
     matrix: np.ndarray  # (4, 4) facial transformation matrix
 
 
-def _detect_face(img_bgr: np.ndarray) -> FaceDetection:
-    """Helper: detect exactly one face → landmarks + blendshapes + transformation matrix."""
-    # The Tasks API expects SRGB; handing it BGR degrades results silently.
+def _run_landmarker(img_bgr: np.ndarray, min_confidence: float | None = None):
+    """Helper: run detection at one confidence. The Tasks API expects SRGB, not BGR."""
     rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    result = _face_landmarker().detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb))
+    return _face_landmarker(min_confidence).detect(
+        mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+    )
+
+
+def _unpack(result, index: int = 0) -> FaceDetection:
+    """Helper: one detection result → landmarks + blendshapes + transformation matrix."""
+    lm = result.face_landmarks[index]
+    if len(lm) < 468:
+        raise AnalyzeError(code="FACE_TOO_ANGLED_OR_SMALL", http_status=400)
+    norm = np.array([[p.x, p.y, p.z] for p in lm], dtype=np.float32)  # (478,3)
+    blendshapes = {c.category_name: float(c.score) for c in result.face_blendshapes[index]}
+    matrix = np.array(
+        result.facial_transformation_matrixes[index], dtype=np.float32
+    ).reshape(4, 4)
+    return FaceDetection(landmarks=norm, blendshapes=blendshapes, matrix=matrix)
+
+
+def _diagnose_missed_face(img_bgr: np.ndarray) -> None:
+    """Raise a better error than NO_FACE_DETECTED when a retry does find a face.
+
+    A turned head often falls under the primary confidence. Reporting that as
+    "no face detected" tells the user to put a face in frame, when the face is
+    already there and the actual fix is to face the camera. If the lower-confidence
+    pass finds one, the face is real but marginal, so report
+    FACE_TOO_ANGLED_OR_SMALL and use the pose to say which way it is marginal.
+
+    Returns normally when the retry also finds nothing, leaving the caller to raise
+    NO_FACE_DETECTED. Never raises MULTIPLE_FACES_DETECTED: at this confidence extra
+    detections are as likely to be noise as second people.
+    """
+    _primary, retry = detection_confidences()
+    try:
+        result = _run_landmarker(img_bgr, retry)
+    except Exception:  # noqa: BLE001 — diagnosis must never mask the original failure
+        return
+    if not (result.face_landmarks or []):
+        return
+
+    hint = None
+    try:
+        matrix = np.array(
+            result.facial_transformation_matrixes[0], dtype=np.float32
+        ).reshape(4, 4)
+        pose_ok, pose = check_pose(matrix)
+        detail = (
+            f"Face found only at confidence {retry} "
+            f"(yaw={pose['yaw_deg']:.1f}, pitch={pose['pitch_deg']:.1f}, "
+            f"roll={pose['roll_deg']:.1f})."
+        )
+        # Only claim the head is turned when the pose says so. A marginal face that
+        # is squarely frontal is small or blurred instead, and the generic message
+        # for this code already covers that.
+        if not pose_ok:
+            hint = "Please look straight at the camera."
+    except Exception:  # noqa: BLE001 — pose is extra detail, not the decision
+        detail = f"Face found only at confidence {retry}."
+
+    raise AnalyzeError(
+        code="FACE_TOO_ANGLED_OR_SMALL", http_status=400, details=detail, hint=hint
+    )
+
+
+def _detect_face(
+    img_bgr: np.ndarray,
+    *,
+    retry_low_confidence: bool = False,
+) -> FaceDetection:
+    """Helper: detect exactly one face → landmarks + blendshapes + transformation matrix.
+
+    ``retry_low_confidence`` re-runs a miss at the lower confidence purely to pick a
+    more accurate error code. It costs a second detection pass, so it is off by
+    default: offline builds reject most of their input and would pay it constantly.
+    """
+    result = _run_landmarker(img_bgr)
 
     faces = result.face_landmarks or []
     if len(faces) == 0:
+        if retry_low_confidence:
+            _diagnose_missed_face(img_bgr)
         raise AnalyzeError(code="NO_FACE_DETECTED", http_status=400)
     if len(faces) > 1:
         raise AnalyzeError(code="MULTIPLE_FACES_DETECTED", http_status=400)
 
-    lm = faces[0]
-    if len(lm) < 468:
-        raise AnalyzeError(code="FACE_TOO_ANGLED_OR_SMALL", http_status=400)
-
-    norm = np.array([[p.x, p.y, p.z] for p in lm], dtype=np.float32)  # (478,3)
-    blendshapes = {c.category_name: float(c.score) for c in result.face_blendshapes[0]}
-    matrix = np.array(result.facial_transformation_matrixes[0], dtype=np.float32).reshape(4, 4)
-    return FaceDetection(landmarks=norm, blendshapes=blendshapes, matrix=matrix)
+    return _unpack(result)
 
 
 @lru_cache(maxsize=1)
@@ -396,7 +474,7 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
     h, w = img.shape[:2]
 
     # 1. Pass 1: landmarks on original (also used for fail-soft crop bbox).
-    det_orig = _detect_face(img)
+    det_orig = _detect_face(img, retry_low_confidence=True)
 
     normalize_note = "Face normalize: skipped (using original)"
     transform = None
