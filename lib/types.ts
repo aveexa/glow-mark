@@ -13,6 +13,23 @@ export interface CatalogSuggestion {
   confidence: number;
 }
 
+/** Which comparison group the measurements were scored against.
+ *  A reference population, never an identity claim about the user. */
+export interface RegionInfo {
+  /** Full 7-way mixture, or null when no group was used (global arm). */
+  weights: Record<string, number> | null;
+  /** Human-readable group name, e.g. "South Asian" or "South Asian / Middle Eastern". */
+  reference_label: string | null;
+  source: 'inferred' | 'user_override' | 'global_fallback';
+  overridable: boolean;
+}
+
+/** Gate readings for this request, surfaced for display and debugging. */
+export interface GateResults {
+  pose: { yaw_deg: number; pitch_deg: number; roll_deg: number };
+  realness: { p_photo: number };
+}
+
 export interface RecommendationItem {
   label: string;
   class: string;
@@ -43,6 +60,9 @@ export interface AnalysisResult {
   recommendation_items?: RecommendationItem[];
   /** Catalog tips from suggestion ranker (Brain C). */
   suggestions?: CatalogSuggestion[];
+  /** Comparison group these measurements were scored against. */
+  region?: RegionInfo;
+  gates?: GateResults;
   notes: string[];
 }
 
@@ -69,6 +89,8 @@ export interface BackendAnalyzeResponse {
   recommendations: string[];
   recommendation_items?: RecommendationItem[];
   suggestions?: CatalogSuggestion[];
+  region?: RegionInfo;
+  gates?: GateResults;
   notes?: string[];
 }
 

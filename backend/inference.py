@@ -407,29 +407,66 @@ def _region_normalize_beauty(
     )
 
 
-def _detect_region(img_bgr: np.ndarray) -> Tuple[Dict[str, float] | None, str]:
-    """Helper: region mixture weights, or None to fall back to the global arm.
+def _resolve_region(
+    img_bgr: np.ndarray,
+    region_override: str | None = None,
+) -> Tuple[Dict[str, float] | None, str, str]:
+    """Helper: the comparison group for this request → (weights, source, note).
 
-    Runs regardless of NEUTRALITY_THRESHOLD_MODE — that variable scopes only the neutrality
-    thresholds, while the reference norms behind the classes, gauges and beauty
-    score need the mixture either way. Fail-soft by design: an unavailable or
-    erroring region model degrades to the global arm and the request continues.
+    ``source`` is one of:
+      inferred        — the region model produced the mixture
+      user_override   — the caller named a group, so no inference ran
+      global_fallback — inference was unavailable or failed; the global arm is used
+
+    A user override wins outright. It is the mitigation for the region model's
+    measured weakness (61% top-1 overall, 28% on Middle Eastern faces), so it must
+    not be second-guessed by the thing it is correcting. An unrecognised override is
+    ignored rather than rejected, and inference proceeds.
+
+    Runs regardless of NEUTRALITY_THRESHOLD_MODE — that variable scopes only the
+    neutrality thresholds, while the reference norms behind the classes, gauges and
+    beauty score need the mixture either way. Fail-soft by design: an unavailable or
+    erroring region model degrades to the global arm and the request continues, with
+    weights left null rather than faked as a uniform distribution.
     """
     try:
-        from region import predict_region_weights
+        from region import GLOBAL_REGION, normalize_region_override, predict_region_weights
     except Exception as e:  # noqa: BLE001 — region is optional, the global arm still works
-        return None, f"Region: unavailable ({e}); using global norms"
+        return None, "global_fallback", f"Region: unavailable ({e}); using global norms"
+
+    override = normalize_region_override(region_override)
+    if override == GLOBAL_REGION:
+        return None, "user_override", "Region: user chose All (global); using global norms"
+    if override is not None:
+        return {override: 1.0}, "user_override", f"Region: user override -> {override}"
+
     try:
         weights = predict_region_weights(img_bgr)
     except Exception as e:  # noqa: BLE001
-        return None, f"Region: failed ({e}); using global norms"
+        return None, "global_fallback", f"Region: failed ({e}); using global norms"
+
     top = max(weights, key=weights.__getitem__)
     mode = neutrality_threshold_mode()
     scope = (
         "norms + neutrality" if mode == NEUTRALITY_THRESHOLD_MODE_REGION
         else "norms only (NEUTRALITY_THRESHOLD_MODE=global)"
     )
-    return weights, f"Region: mixture (top {top} {weights[top]:.2f}); applied to {scope}"
+    return weights, "inferred", f"Region: mixture (top {top} {weights[top]:.2f}); applied to {scope}"
+
+
+def _region_payload(weights: Dict[str, float] | None, source: str) -> Dict[str, Any]:
+    """Helper: the response's region block, including its user-facing label."""
+    try:
+        from region import reference_label
+        label = reference_label(weights)
+    except Exception:  # noqa: BLE001 — a label is not worth failing a response over
+        label = None
+    return {
+        "weights": weights,
+        "reference_label": label,
+        "source": source,
+        "overridable": True,
+    }
 
 
 # SCUT-FBP5500 / beauty checkpoint training canvas (square).
@@ -462,7 +499,10 @@ def _beauty_features_from_68(
     return pts.reshape(1, -1).astype(np.float32)  # (1,136)
 
 
-def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
+def analyze_image_bytes(
+    image_bytes: bytes,
+    region_override: str | None = None,
+) -> Dict[str, Any]:
     """Run the full analyze pipeline and return the /analyze JSON payload.
 
     Stages: decode → normalize (fail-soft) → realness / pose / neutrality gates →
@@ -534,7 +574,7 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
 
     # 4. Region detection, then 5. neutrality gate — region weights pick the
     #    per-population thresholds, so detection has to come first.
-    region_weights, region_note = _detect_region(img_for_score)
+    region_weights, region_source, region_note = _resolve_region(img_for_score, region_override)
 
     neutral, neutrality_hint = check_neutrality(det.blendshapes, region_weights)
     if not neutral:
@@ -644,5 +684,14 @@ def analyze_image_bytes(image_bytes: bytes) -> Dict[str, Any]:
         "recommendations": recommendations,
         "recommendation_items": feature_items,
         "suggestions": suggestions,
+        "region": _region_payload(region_weights, region_source),
+        "gates": {
+            "pose": {
+                "yaw_deg": round(float(pose["yaw_deg"]), 2),
+                "pitch_deg": round(float(pose["pitch_deg"]), 2),
+                "roll_deg": round(float(pose["roll_deg"]), 2),
+            },
+            "realness": {"p_photo": round(float(p_photo), 4)},
+        },
         "notes": notes,
     }

@@ -41,8 +41,14 @@ def create_app() -> Flask:
             return jsonify({"error": "FILE_TOO_LARGE"}), 400
 
         image_bytes = file.read()
+        # Optional comparison-group override. Session-only: never stored, just used
+        # for this request. An unrecognised value is ignored inside the pipeline.
+        region_override = request.form.get("region_override") or None
         try:
-            result: Dict[str, Any] = analyze_image_bytes(image_bytes=image_bytes)
+            result: Dict[str, Any] = analyze_image_bytes(
+                image_bytes=image_bytes,
+                region_override=region_override,
+            )
         except AnalyzeError as e:
             body: Dict[str, Any] = {"error": e.code, "details": e.details}
             # Specific, actionable text (e.g. "Please close your mouth"); the frontend

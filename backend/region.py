@@ -17,7 +17,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Mapping, Tuple
 
 import cv2
 import numpy as np
@@ -44,6 +44,28 @@ REGION_NAMES: Tuple[str, ...] = (
 )
 _N_RACE = len(REGION_NAMES)
 _N_LOGITS = 18  # 7 race + 2 gender + 9 age; only the first 7 are ever read.
+
+# Display-only. The keys above are FairFace's and stay as they are — they index the
+# threshold tables and the reference statistics. These labels are what a user sees,
+# and they name a comparison group, never an identity: the pipeline compares
+# measurements against a population, it does not decide what anyone is.
+REGION_DISPLAY_LABELS: Dict[str, str] = {
+    "White": "European",
+    "Black": "African",
+    "Latino_Hispanic": "Latino / Hispanic",
+    "East Asian": "East Asian",
+    "Southeast Asian": "Southeast Asian",
+    "Indian": "South Asian",
+    "Middle Eastern": "Middle Eastern",
+}
+
+# Sentinel for "do not condition on a region"; not a member of REGION_NAMES.
+GLOBAL_REGION = "global"
+GLOBAL_DISPLAY_LABEL = "All (global)"
+
+# Below this the top region is not a confident enough single answer to name alone,
+# so the label names the top two instead. Display wording only — no gate reads it.
+REFERENCE_LABEL_MIN_TOP = 0.5
 
 # FairFace's own preprocessing (predict.py): resize to 224, ImageNet normalization.
 _INPUT_SIZE = 224
@@ -88,3 +110,51 @@ def predict_region_weights(img_bgr: np.ndarray) -> Dict[str, float]:
         logits = model(_preprocess(img_bgr)).reshape(-1)[:_N_RACE]
         probs = torch.softmax(logits, dim=0).cpu().numpy()
     return {name: float(p) for name, p in zip(REGION_NAMES, probs)}
+
+
+def display_label(region: str) -> str:
+    """UI label for one region key, or the key itself if it is unknown."""
+    if region == GLOBAL_REGION:
+        return GLOBAL_DISPLAY_LABEL
+    return REGION_DISPLAY_LABELS.get(region, region)
+
+
+def region_choices() -> list[dict]:
+    """The comparison groups a user may pick, in the model's own order, plus global."""
+    return [{"value": r, "label": display_label(r)} for r in REGION_NAMES] + [
+        {"value": GLOBAL_REGION, "label": GLOBAL_DISPLAY_LABEL}
+    ]
+
+
+def normalize_region_override(value: str | None) -> str | None:
+    """Validate a user-supplied override against the known groups.
+
+    Returns a region name, ``GLOBAL_REGION``, or None when the value is absent or
+    unrecognised — an unrecognised override is ignored rather than rejected, so a
+    stale client cannot break analysis.
+    """
+    if not value:
+        return None
+    candidate = str(value).strip()
+    if candidate == GLOBAL_REGION:
+        return GLOBAL_REGION
+    for name in REGION_NAMES:
+        if candidate.lower() == name.lower():
+            return name
+    return None
+
+
+def reference_label(weights: Mapping[str, float] | None) -> str:
+    """Human-readable name for the comparison group a mixture represents.
+
+    Names the top group when it clearly dominates, otherwise names the top two, so
+    the label does not assert a single answer the mixture does not support.
+    """
+    if not weights:
+        return GLOBAL_DISPLAY_LABEL
+    ranked = sorted(weights.items(), key=lambda kv: -float(kv[1]))
+    if not ranked:
+        return GLOBAL_DISPLAY_LABEL
+    if float(ranked[0][1]) >= REFERENCE_LABEL_MIN_TOP or len(ranked) == 1:
+        return display_label(ranked[0][0])
+    return " / ".join(display_label(r) for r, _ in ranked[:2])
